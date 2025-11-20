@@ -285,13 +285,13 @@
             <button id="close-terminal" class="hover:bg-[var(--neon-green)] hover:text-black px-2">X</button>
         </div>
         <div id="terminal-output" class="terminal-output flex-grow overflow-y-auto mb-2 whitespace-pre-wrap">Welcome to the Neural Uplink.
-Status: Annoyed.
-Connected to Gemini 2.5 Flash (unfortunately).
-Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
+Status: JUDGMENTAL.
+Connected to: LOCAL_ROAST_MODULE_v9.0
+Ask anything. I dare you.
 </div>
         <div class="flex items-center border-t border-gray-800 pt-2">
             <span class="mr-2 animate-pulse">></span>
-            <input type="text" id="terminal-input" class="bg-transparent border-none outline-none text-white w-full font-mono" placeholder="Don't ask stupid questions..." autocomplete="off">
+            <input type="text" id="terminal-input" class="bg-transparent border-none outline-none text-white w-full font-mono" placeholder="Impress me..." autocomplete="off">
         </div>
     </div>
 
@@ -452,8 +452,6 @@ Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
     </section>
 
     <script>
-        const apiKey = ""; // Provided by environment
-
         // --- SARCASM MODULE ---
         // 1. Console Spam
         console.log("%c STOP SNOOPING ", "background: #ccff00; color: black; font-size: 30px; font-weight: bold; padding: 10px;");
@@ -482,55 +480,73 @@ Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
             setTimeout(() => statusText.parentElement.classList.remove('animate-pulse'), 200);
         }, 4000);
 
-        // --- GEMINI API INTEGRATION ---
+        // --- DEVELOPER ROASTS LIBRARY ---
+        const developerRoasts = [
+            "Oh, you're a 'Full Stack' developer? So you write bad backend code AND bad frontend code?",
+            "I see you pushed directly to main. Stupid, but brave.",
+            "Your code is so coupled, if I touch the CSS, the database drops.",
+            "Have you tried turning it off and... never turning it back on?",
+            "6 hours of debugging later... it was a missing semicolon. Classic you.",
+            "Nice 'TODO' comment from 2019. I'm sure you'll get to it.",
+            "I've seen cleaner spaghetti at a cheap Italian restaurant.",
+            "Documentation? You mean the code, right? The code is self-documenting. (It isn't)",
+            "You call that a variable name? `data2`? Really?",
+            "Git blame shows YOU wrote this garbage 3 months ago.",
+            "'It works on my machine' - The tombstone of your career.",
+            "Congratulations, you reinvented the wheel. But square.",
+            "Why use a 5-line script when you can import a 2MB library?",
+            "Your linter is screaming in pain right now.",
+            "Is this code obfuscated or did you just type with your forehead?",
+            "Deploying on Friday? I too like to live dangerously.",
+            "A junior dev just rewrote your feature in 10 lines.",
+            "Jenkins failed. Again. Probably your fault.",
+            "You have 400 tabs open. You're not multitasking, you're hoarding RAM.",
+            "Sudo make me a sandwich.",
+            "404: Skill not found.",
+            "This works by accident, doesn't it?",
+            "Unit tests? You mean the users?",
+            "Your CSS z-index strategy is just 'add 9s until it works'.",
+            "I'd explain the race condition but you wouldn't get it until later.",
+            "Copy-pasting from Stack Overflow isn't 'engineering'.",
+            "Javascript: The only language where `[] + []` is an empty string and your career choices are questionable.",
+            "You're one missing `await` away from a mental breakdown.",
+            "Refactoring? You mean rewriting it poorly a second time?",
+            "Go ahead, blame the cache. We know it's your logic."
+        ];
 
-        async function callGemini(prompt, systemInstruction, isJson = false) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] }
-            };
-
-            if (isJson) {
-                payload.generationConfig = {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                         type: "OBJECT",
-                         properties: {
-                            title: { type: "STRING" },
-                            description: { type: "STRING" },
-                            techStack: { type: "ARRAY", items: { type: "STRING" } },
-                            version: { type: "STRING" }
-                         }
-                    }
-                };
+        // --- MOCK CHAOS GENERATOR ---
+        const mockProjects = [
+            {
+                title: "BLOCKCHAIN TOASTER",
+                description: "IoT device that mines crypto while burning your bread. Requires 3 GPUs.",
+                version: "v0.0.1-hot",
+                techStack: ["SOLIDITY", "RUST", "FIREHAZARD"]
+            },
+            {
+                title: "TINDER FOR CATS",
+                description: "Facial recognition for felines. Swipe right to meow. GDPR non-compliant.",
+                version: "v9.lives",
+                techStack: ["TENSORFLOW", "MEOW.JS", "AWS"]
+            },
+            {
+                title: "VIRTUAL GRASS TOUCHER",
+                description: "VR simulation for devs who haven't been outside in weeks. Haptic feedback included.",
+                version: "v1.0.touch",
+                techStack: ["UNITY", "WEBXR", "REALITY"]
+            },
+            {
+                title: "SCREAM-DRIVEN DEVELOPMENT",
+                description: "Microservice that deploys code only when microphone detects high decibel swearing.",
+                version: "v66.6",
+                techStack: ["AUDIO API", "DOCKER", "RAGE"]
+            },
+            {
+                title: "INFINITE SCROLL OF DOOM",
+                description: "A social network with no content, just loading spinners that never finish. Art.",
+                version: "v∞",
+                techStack: ["HTML", "CSS", "PAIN"]
             }
-
-            // Retry logic (Exponential Backoff)
-            let delay = 1000;
-            for (let i = 0; i < 5; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
-                    
-                    const data = await response.json();
-                    const text = data.candidates[0].content.parts[0].text;
-                    return isJson ? JSON.parse(text) : text;
-
-                } catch (error) {
-                    console.error(`Attempt ${i+1} failed`, error);
-                    if (i === 4) throw error;
-                    await new Promise(r => setTimeout(r, delay));
-                    delay *= 2;
-                }
-            }
-        }
+        ];
 
         // --- FEATURE 1: NEURAL UPLINK (TERMINAL CHAT) ---
 
@@ -549,7 +565,7 @@ Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
             terminalModal.style.display = 'none';
         });
 
-        terminalInput.addEventListener('keypress', async (e) => {
+        terminalInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const query = terminalInput.value;
                 if (!query) return;
@@ -557,31 +573,13 @@ Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
                 // Add user command to log
                 terminalOutput.innerHTML += `\n<span class="text-white">root@karthik:~$</span> ${query}`;
                 terminalInput.value = '';
-                terminalOutput.innerHTML += `\n<span class="animate-pulse">Reading your mind... (Empty)</span>`;
+                
+                // Pick random roast
+                const roast = developerRoasts[Math.floor(Math.random() * developerRoasts.length)];
+
+                // Typewriter effect for response
+                terminalOutput.innerHTML += `\n<span style="color:var(--neon-green)">[SYSTEM_ROAST]:</span> ${roast}\n`;
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
-
-                try {
-                    const systemPrompt = `You are a CLI tool representing Karthik Rathod. 
-                    Identity: A cynical, sarcastic, but highly skilled GCP Architect and Full Stack Developer.
-                    Tone: Cyberpunk, Hacker, slightly rude but helpful. Use tech slang.
-                    Knowledge: Expert in Google Cloud Platform, Kubernetes, Terraform, Chaos Engineering, and React.
-                    Behavior: Mock the user slightly for asking simple questions, but provide the answer.
-                    Keep responses short (under 3 sentences) and strictly text-based.`;
-                    
-                    const response = await callGemini(query, systemPrompt);
-                    
-                    // Remove "Processing..."
-                    const lines = terminalOutput.innerHTML.split('\n');
-                    lines.pop();
-                    terminalOutput.innerHTML = lines.join('\n');
-
-                    // Typewriter effect for response
-                    terminalOutput.innerHTML += `\n<span style="color:var(--neon-green)">[SYSTEM_RESPONSE]:</span> ${response}\n`;
-                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
-
-                } catch (err) {
-                     terminalOutput.innerHTML += `\n<span style="color:red">ERROR: UPLINK_FAILED. Did you try turning it off and on again?</span>\n`;
-                }
             }
         });
 
@@ -590,16 +588,14 @@ Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
         const injectBtn = document.getElementById('inject-chaos-btn');
         const projectsGrid = document.getElementById('projects-grid');
 
-        injectBtn.addEventListener('click', async () => {
+        injectBtn.addEventListener('click', () => {
             const originalText = injectBtn.innerText;
             injectBtn.innerHTML = `WASTING RESOURCES... <span class="loading-bar block mt-1"></span>`;
             injectBtn.disabled = true;
 
-            try {
-                const prompt = "Generate a wild, creative, and technically complex web development project idea. It should sound impressive and slightly chaotic. Include a title, a short description, a version number (like v0.9.1b), and 3 tech stack tags.";
-                const systemPrompt = "You are a creative engine for a brutalist portfolio. Output ONLY JSON.";
-                
-                const project = await callGemini(prompt, systemPrompt, true);
+            // Simulate network delay for "realism"
+            setTimeout(() => {
+                const project = mockProjects[Math.floor(Math.random() * mockProjects.length)];
 
                 // Create new card
                 const newCard = document.createElement('div');
@@ -626,13 +622,10 @@ Ask about GCP Architecture, Kubernetes, or why your code doesn't compile...
                 // Scroll to it
                 newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            } catch (error) {
-                alert("ERROR: CREATIVITY_BUFFER_OVERFLOW. THE AI GAVE UP.");
-                console.error(error);
-            } finally {
                 injectBtn.innerText = originalText;
                 injectBtn.disabled = false;
-            }
+
+            }, 1500); // 1.5s fake delay
         });
 
         // --- EXISTING LOGIC ---
