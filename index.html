@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAX_ENTROPY_PORTFOLIO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-green: #ccff00;
+            --neon-pink: #ff0099;
+            --void-black: #050505;
+            --off-white: #f0f0f0;
+            --terminal-bg: rgba(10, 10, 10, 0.95);
+        }
+
+        * {
+            cursor: none; /* We build our own cursor */
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--void-black);
+            color: var(--off-white);
+            font-family: 'Space Mono', monospace;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        /* Scrollbar Hide */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* Typography */
+        .display-font {
+            font-family: 'Syncopate', sans-serif;
+            text-transform: uppercase;
+            line-height: 0.8;
+        }
+
+        /* Custom Cursor */
+        #cursor-dot,
+        #cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--neon-green);
+        }
+
+        #cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--neon-green);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        body:hover #cursor-outline {
+            opacity: 1;
+        }
+
+        /* Glitch Animation */
+        .glitch-wrapper {
+            position: relative;
+        }
+        
+        .glitch-wrapper::before,
+        .glitch-wrapper::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--void-black);
+        }
+
+        .glitch-wrapper::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--neon-pink);
+            clip-path: inset(24% 0 29% 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+
+        .glitch-wrapper::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-green);
+            clip-path: inset(54% 0 21% 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(40% 0 61% 0); }
+            20% { clip-path: inset(92% 0 1% 0); }
+            40% { clip-path: inset(43% 0 1% 0); }
+            60% { clip-path: inset(25% 0 58% 0); }
+            80% { clip-path: inset(54% 0 7% 0); }
+            100% { clip-path: inset(58% 0 43% 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(24% 0 29% 0); }
+            20% { clip-path: inset(54% 0 21% 0); }
+            40% { clip-path: inset(11% 0 5% 0); }
+            60% { clip-path: inset(80% 0 20% 0); }
+            80% { clip-path: inset(12% 0 80% 0); }
+            100% { clip-path: inset(60% 0 10% 0); }
+        }
+
+        /* Marquee */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            position: absolute;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Draggable Window */
+        .drag-window {
+            box-shadow: 10px 10px 0px var(--neon-green);
+            transition: box-shadow 0.2s;
+        }
+        .drag-window:active {
+            box-shadow: 5px 5px 0px var(--neon-pink);
+        }
+
+        /* Terminal Modal */
+        #terminal-modal {
+            background-color: var(--terminal-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
+        }
+        
+        .terminal-output::-webkit-scrollbar {
+            width: 4px;
+        }
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: var(--neon-green);
+        }
+
+        /* Noise Overlay */
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9000;
+            opacity: 0.05;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+        }
+
+        /* Mobile Reset */
+        @media (hover: none) {
+            * { cursor: auto !important; }
+            #cursor-dot, #cursor-outline { display: none; }
+        }
+
+        .hover-invert:hover {
+            background-color: var(--neon-green);
+            color: var(--void-black);
+        }
+        
+        canvas#bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .project-card:hover .card-reveal {
+            height: 100%;
+        }
+
+        /* Loading Animation */
+        .loading-bar {
+            width: 100%;
+            height: 2px;
+            background: #333;
+            position: relative;
+            overflow: hidden;
+        }
+        .loading-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 50%;
+            background: var(--neon-green);
+            animation: load 1s infinite ease-in-out;
+        }
+        @keyframes load {
+            0% { left: -50%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor Elements -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-outline"></div>
+    
+    <!-- Noise Grain -->
+    <div class="noise"></div>
+
+    <!-- Canvas Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50 mix-blend-difference text-white">
+        <div class="text-2xl font-bold glitch-wrapper" data-text="[USER: KARTHIK]">
+            [USER: KARTHIK]
+        </div>
+        <div class="flex gap-8 text-sm md:text-base items-center">
+            <button id="terminal-btn" class="hacker-text text-[var(--neon-green)] hover:text-white font-bold animate-pulse mr-4" data-value=">_ NEURAL_UPLINK">>_ NEURAL_UPLINK</button>
+            <a href="#work" class="hacker-text hover:text-[var(--neon-green)] hidden md:block" data-value="WORK">WORK</a>
+            <a href="#about" class="hacker-text hover:text-[var(--neon-green)] hidden md:block" data-value="ABOUT">ABOUT</a>
+            <a href="#contact" class="hacker-text hover:text-[var(--neon-green)] hidden md:block" data-value="CONTACT">CONTACT</a>
+        </div>
+    </nav>
+
+    <!-- Terminal Modal (Initially Hidden) -->
+    <div id="terminal-modal" class="fixed bottom-10 right-6 md:right-10 w-[90vw] md:w-[500px] h-[400px] z-[10000] hidden flex-col font-mono text-xs md:text-sm text-[var(--neon-green)] p-4 rounded-sm">
+        <div class="flex justify-between items-center border-b border-[var(--neon-green)] pb-2 mb-2 select-none">
+            <span>root@karthik:~/neural_link#</span>
+            <button id="close-terminal" class="hover:bg-[var(--neon-green)] hover:text-black px-2">X</button>
+        </div>
+        <div id="terminal-output" class="terminal-output flex-grow overflow-y-auto mb-2 whitespace-pre-wrap">Welcome to the Neural Uplink.
+System status: ONLINE.
+Connected to Gemini 2.5 Flash Preview.
+Ask about GCP Architecture, Kubernetes, or Chaos Engineering...
+</div>
+        <div class="flex items-center border-t border-gray-800 pt-2">
+            <span class="mr-2 animate-pulse">></span>
+            <input type="text" id="terminal-input" class="bg-transparent border-none outline-none text-white w-full font-mono" placeholder="Enter command..." autocomplete="off">
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden">
+        <!-- Background Marquee -->
+        <div class="marquee-container text-[15vh] md:text-[20vh] font-bold opacity-10 select-none display-font top-1/2 -translate-y-1/2">
+            <div class="marquee-content text-transparent stroke-white" style="-webkit-text-stroke: 2px var(--off-white);">
+                BREAK THE GRID BREAK THE GRID BREAK THE GRID BREAK THE GRID BREAK THE GRID
+            </div>
+        </div>
+
+        <div class="z-10 text-center mix-blend-difference">
+            <p class="text-[var(--neon-green)] mb-4 tracking-widest">CREATIVE DEVELOPER</p>
+            <h1 class="display-font text-6xl md:text-9xl font-black text-white leading-none mb-6 hover-trigger">
+                PURE<br><span class="text-[var(--neon-pink)] italic">CHAOS</span>
+            </h1>
+            <button onclick="document.getElementById('work').scrollIntoView({behavior: 'smooth'})" 
+                    class="border border-[var(--neon-green)] px-8 py-4 text-[var(--neon-green)] hover:bg-[var(--neon-green)] hover:text-black transition-all duration-300 uppercase tracking-widest">
+                Initialize Protocol
+            </button>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="work" class="min-h-screen py-24 px-6 md:px-24 relative z-10">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-20 border-b border-[var(--neon-green)] pb-4">
+            <div class="flex items-end gap-4">
+                <h2 class="display-font text-5xl md:text-7xl">ARCHIVE</h2>
+                <span class="text-xl mb-2 animate-pulse text-[var(--neon-pink)]">● REC</span>
+            </div>
+            <button id="inject-chaos-btn" class="mt-4 md:mt-0 border border-[var(--neon-pink)] text-[var(--neon-pink)] px-4 py-2 text-sm font-mono hover:bg-[var(--neon-pink)] hover:text-black transition-all">
+                ✨ INJECT_CHAOS.exe
+            </button>
+        </div>
+
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            
+            <!-- Project 1 -->
+            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-[var(--neon-green)]">
+                <div class="absolute -top-3 -left-3 bg-[var(--neon-green)] text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    v2.0.4
+                </div>
+                <h3 class="text-4xl font-bold mb-4 group-hover:text-[var(--neon-green)]">E-COMMERCE<br>DISTORTION</h3>
+                <p class="text-gray-400 mb-8 font-mono text-sm">A shopping experience that hates you. Brutalist design patterns meets conversion optimization. Built with Three.js.</p>
+                <div class="flex gap-2 flex-wrap">
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">REACT</span>
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">WEBGL</span>
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">GSAP</span>
+                </div>
+                <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-[var(--neon-green)] transition-all duration-300 group-hover:h-2"></div>
+            </div>
+
+            <!-- Project 2 -->
+            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-[var(--neon-pink)] mt-0 md:mt-24">
+                 <div class="absolute -top-3 -left-3 bg-[var(--neon-pink)] text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    BETA
+                </div>
+                <h3 class="text-4xl font-bold mb-4 group-hover:text-[var(--neon-pink)]">NEURAL<br>AUDIO VISUALIZER</h3>
+                <p class="text-gray-400 mb-8 font-mono text-sm">Real-time frequency analysis mapped to generated terrain. Feed it mp3s, watch mountains grow.</p>
+                <div class="flex gap-2 flex-wrap">
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">CANVAS API</span>
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">AUDIO API</span>
+                </div>
+                 <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-[var(--neon-pink)] transition-all duration-300 group-hover:h-2"></div>
+            </div>
+
+            <!-- Project 3 -->
+            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-cyan-400">
+                <div class="absolute -top-3 -left-3 bg-cyan-400 text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    LEGACY
+                </div>
+                <h3 class="text-4xl font-bold mb-4 group-hover:text-cyan-400">CYBER<br>SECURITY DASH</h3>
+                <p class="text-gray-400 mb-8 font-mono text-sm">Dark mode analytic dashboard for threat detection. High density data visualization.</p>
+                <div class="flex gap-2 flex-wrap">
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">D3.JS</span>
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">VUE</span>
+                </div>
+                 <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-cyan-400 transition-all duration-300 group-hover:h-2"></div>
+            </div>
+
+            <!-- Project 4 (New GCP Section) -->
+            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-yellow-400 mt-0 md:mt-24">
+                 <div class="absolute -top-3 -left-3 bg-yellow-400 text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    DEPLOYED
+                </div>
+                <h3 class="text-4xl font-bold mb-4 group-hover:text-yellow-400">CLOUD<br>INFRASTRUCTURE</h3>
+                <p class="text-gray-400 mb-8 font-mono text-sm">GCP architectural mastery. Auto-scaling Kubernetes clusters with Terraform and chaos engineering resilience.</p>
+                <div class="flex gap-2 flex-wrap">
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">GCP</span>
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">K8S</span>
+                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">TERRAFORM</span>
+                </div>
+                 <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-yellow-400 transition-all duration-300 group-hover:h-2"></div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Draggable About Section -->
+    <section id="about" class="h-[80vh] w-full flex items-center justify-center relative z-20 overflow-hidden pointer-events-none">
+        
+        <!-- The Window -->
+        <div id="drag-element" class="drag-window pointer-events-auto bg-[#1a1a1a] w-full max-w-lg border-2 border-[var(--neon-green)] absolute p-0 cursor-grab active:cursor-grabbing">
+            <!-- Window Header -->
+            <div class="bg-[var(--neon-green)] p-2 flex justify-between items-center select-none" id="drag-header">
+                <span class="text-black font-bold text-sm">:: SYSTEM_PROPERTIES.exe</span>
+                <div class="flex gap-1">
+                    <div class="w-3 h-3 bg-black"></div>
+                    <div class="w-3 h-3 bg-black"></div>
+                    <div class="w-3 h-3 bg-transparent border border-black"></div>
+                </div>
+            </div>
+            
+            <!-- Window Body -->
+            <div class="p-6 md:p-8">
+                <div class="flex gap-6 mb-6">
+                    <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="Avatar" class="w-24 h-24 border-2 border-white grayscale hover:grayscale-0 transition-all">
+                    <div class="flex flex-col justify-center">
+                        <h3 class="text-xl font-bold text-[var(--neon-pink)]">KARTHIK_RATHOD</h3>
+                        <p class="text-xs text-gray-400">Full Stack Dev | GCP Architect</p>
+                        <p class="text-xs text-[var(--neon-green)] mt-1">STATUS: ONLINE</p>
+                    </div>
+                </div>
+                <p class="text-sm leading-relaxed mb-4 font-mono">
+                    I don't just write code; I force electrons to do my bidding. Obsessed with interactive web experiences, WebGL, and breaking standard UI patterns.
+                </p>
+                <p class="text-sm leading-relaxed font-mono">
+                    Currently building things that shouldn't work in a browser, but do.
+                </p>
+                
+                <div class="mt-6 border-t border-gray-700 pt-4 flex justify-between text-xs font-mono text-gray-500">
+                    <span>MEMORY: 64GB</span>
+                    <span>CPU: OVERCLOCKED</span>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Contact Footer -->
+    <section id="contact" class="py-24 bg-[var(--neon-green)] text-black relative z-10">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="display-font text-5xl md:text-8xl mb-8 font-black mix-blend-multiply">LET'S COLLIDE</h2>
+            <p class="text-xl font-bold mb-12 max-w-2xl mx-auto">Have a crazy idea? I'm expensive, but I'm worth it.</p>
+            
+            <div class="flex flex-wrap justify-center gap-4 md:gap-8">
+                <a href="#" class="border-2 border-black px-8 py-3 text-lg font-bold hover:bg-black hover:text-[var(--neon-green)] transition-colors">EMAIL_ME</a>
+                <a href="#" class="border-2 border-black px-8 py-3 text-lg font-bold hover:bg-black hover:text-[var(--neon-green)] transition-colors">TWITTER</a>
+                <a href="#" class="border-2 border-black px-8 py-3 text-lg font-bold hover:bg-black hover:text-[var(--neon-green)] transition-colors">GITHUB</a>
+            </div>
+
+            <div class="mt-24 font-mono text-xs opacity-50">
+                © 2025 CHAOS SYSTEMS INC. <br> NO COOKIES. JUST RAW CODE.
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const apiKey = ""; // Provided by environment
+
+        // --- GEMINI API INTEGRATION ---
+
+        async function callGemini(prompt, systemInstruction, isJson = false) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            if (isJson) {
+                payload.generationConfig = {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                         type: "OBJECT",
+                         properties: {
+                            title: { type: "STRING" },
+                            description: { type: "STRING" },
+                            techStack: { type: "ARRAY", items: { type: "STRING" } },
+                            version: { type: "STRING" }
+                         }
+                    }
+                };
+            }
+
+            // Retry logic (Exponential Backoff)
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                    
+                    const data = await response.json();
+                    const text = data.candidates[0].content.parts[0].text;
+                    return isJson ? JSON.parse(text) : text;
+
+                } catch (error) {
+                    console.error(`Attempt ${i+1} failed`, error);
+                    if (i === 4) throw error;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        // --- FEATURE 1: NEURAL UPLINK (TERMINAL CHAT) ---
+
+        const terminalModal = document.getElementById('terminal-modal');
+        const terminalBtn = document.getElementById('terminal-btn');
+        const closeTerminal = document.getElementById('close-terminal');
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalOutput = document.getElementById('terminal-output');
+
+        terminalBtn.addEventListener('click', () => {
+            terminalModal.style.display = 'flex';
+            terminalInput.focus();
+        });
+
+        closeTerminal.addEventListener('click', () => {
+            terminalModal.style.display = 'none';
+        });
+
+        terminalInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const query = terminalInput.value;
+                if (!query) return;
+
+                // Add user command to log
+                terminalOutput.innerHTML += `\n<span class="text-white">root@karthik:~$</span> ${query}`;
+                terminalInput.value = '';
+                terminalOutput.innerHTML += `\n<span class="animate-pulse">Processing...</span>`;
+                terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+                try {
+                    const systemPrompt = `You are a CLI tool representing Karthik Rathod. 
+                    Identity: A cynical but highly skilled GCP Architect and Full Stack Developer.
+                    Tone: Cyberpunk, Hacker, concise, technical. Use tech slang like 'ping me', 'latency', 'deployed'.
+                    Knowledge: Expert in Google Cloud Platform, Kubernetes, Terraform, Chaos Engineering, and React.
+                    If asked about Karthik, praise his ability to build scalable, fault-tolerant systems.
+                    Keep responses short (under 3 sentences) and strictly text-based.`;
+                    
+                    const response = await callGemini(query, systemPrompt);
+                    
+                    // Remove "Processing..."
+                    const lines = terminalOutput.innerHTML.split('\n');
+                    lines.pop();
+                    terminalOutput.innerHTML = lines.join('\n');
+
+                    // Typewriter effect for response
+                    terminalOutput.innerHTML += `\n<span style="color:var(--neon-green)">[SYSTEM_RESPONSE]:</span> ${response}\n`;
+                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+                } catch (err) {
+                     terminalOutput.innerHTML += `\n<span style="color:red">ERROR: UPLINK_FAILED. RETRY.</span>\n`;
+                }
+            }
+        });
+
+        // --- FEATURE 2: INJECT CHAOS (PROJECT GENERATOR) ---
+        
+        const injectBtn = document.getElementById('inject-chaos-btn');
+        const projectsGrid = document.getElementById('projects-grid');
+
+        injectBtn.addEventListener('click', async () => {
+            const originalText = injectBtn.innerText;
+            injectBtn.innerHTML = `INITIALIZING... <span class="loading-bar block mt-1"></span>`;
+            injectBtn.disabled = true;
+
+            try {
+                const prompt = "Generate a wild, creative, and technically complex web development project idea. It should sound impressive and slightly chaotic. Include a title, a short description, a version number (like v0.9.1b), and 3 tech stack tags.";
+                const systemPrompt = "You are a creative engine for a brutalist portfolio. Output ONLY JSON.";
+                
+                const project = await callGemini(prompt, systemPrompt, true);
+
+                // Create new card
+                const newCard = document.createElement('div');
+                newCard.className = 'project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-[var(--neon-pink)] animate-[pulse_0.5s_ease-in-out]';
+                newCard.innerHTML = `
+                    <div class="absolute -top-3 -left-3 bg-[var(--neon-pink)] text-black text-xs font-bold px-2 py-1">
+                        ${project.version}
+                    </div>
+                    <h3 class="text-4xl font-bold mb-4 group-hover:text-[var(--neon-pink)] uppercase break-words">${project.title}</h3>
+                    <p class="text-gray-400 mb-8 font-mono text-sm">${project.description}</p>
+                    <div class="flex gap-2 flex-wrap">
+                        ${project.techStack.map(tech => `<span class="border border-white/30 px-2 py-1 text-xs rounded-full uppercase">${tech}</span>`).join('')}
+                    </div>
+                    <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-[var(--neon-pink)] transition-all duration-300 group-hover:h-2"></div>
+                `;
+
+                // Insert after the first card
+                if (projectsGrid.children.length > 0) {
+                    projectsGrid.insertBefore(newCard, projectsGrid.children[1]);
+                } else {
+                    projectsGrid.appendChild(newCard);
+                }
+
+                // Scroll to it
+                newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (error) {
+                alert("ERROR: CREATIVITY_BUFFER_OVERFLOW. TRY AGAIN.");
+                console.error(error);
+            } finally {
+                injectBtn.innerText = originalText;
+                injectBtn.disabled = false;
+            }
+        });
+
+        // --- EXISTING LOGIC ---
+
+        // 1. Custom Cursor Logic
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorOutline = document.getElementById('cursor-outline');
+
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            // Dot follows instantly
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+
+            // Outline follows with lag
+            cursorOutline.animate({
+                left: `${posX}px`,
+                top: `${posY}px`
+            }, { duration: 500, fill: "forwards" });
+        });
+
+        // Hover effect on interactive elements for cursor
+        const interactables = document.querySelectorAll('a, button, .project-card');
+        interactables.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursorOutline.style.width = '80px';
+                cursorOutline.style.height = '80px';
+                cursorOutline.style.backgroundColor = 'white';
+                cursorOutline.style.mixBlendMode = 'difference';
+            });
+            el.addEventListener('mouseleave', () => {
+                cursorOutline.style.width = '40px';
+                cursorOutline.style.height = '40px';
+                cursorOutline.style.backgroundColor = 'transparent';
+                cursorOutline.style.mixBlendMode = 'difference';
+            });
+        });
+
+        // 2. "Hacker" Text Scramble Effect
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%&";
+        
+        document.querySelectorAll(".hacker-text").forEach(item => {
+            item.onmouseover = event => {
+                let iterations = 0;
+                const interval = setInterval(() => {
+                    event.target.innerText = event.target.innerText
+                        .split("")
+                        .map((letter, index) => {
+                            if(index < iterations) {
+                                return event.target.dataset.value[index];
+                            }
+                            return letters[Math.floor(Math.random() * 26)];
+                        })
+                        .join("");
+                    
+                    if(iterations >= event.target.dataset.value.length){ 
+                        clearInterval(interval);
+                    }
+                    
+                    iterations += 1 / 3;
+                }, 30);
+            }
+        });
+
+        // 3. Draggable Window Logic
+        const dragElement = document.getElementById("drag-element");
+        const dragHeader = document.getElementById("drag-header");
+        
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+        dragHeader.onmousedown = dragMouseDown;
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+            dragElement.style.cursor = 'grabbing';
+            // Scale up slightly when dragging
+            dragElement.style.transform = "scale(1.02)";
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            dragElement.style.top = (dragElement.offsetTop - pos2) + "px";
+            dragElement.style.left = (dragElement.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+            dragElement.style.cursor = 'grab';
+            dragElement.style.transform = "scale(1)";
+        }
+
+        // 4. Canvas Background Animation (Geometric Web)
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particlesArray;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor(x, y, directionX, directionY, size, color) {
+                this.x = x;
+                this.y = y;
+                this.directionX = directionX;
+                this.directionY = directionY;
+                this.size = size;
+                this.color = color;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = '#333';
+                ctx.fill();
+            }
+
+            update() {
+                if (this.x > canvas.width || this.x < 0) {
+                    this.directionX = -this.directionX;
+                }
+                if (this.y > canvas.height || this.y < 0) {
+                    this.directionY = -this.directionY;
+                }
+
+                // Mouse Interaction
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+                
+                if (distance < mouse.radius + this.size){
+                    if (mouse.x < this.x && this.x < canvas.width - this.size * 10) {
+                        this.x += 10;
+                    }
+                    if (mouse.x > this.x && this.x > this.size * 10) {
+                        this.x -= 10;
+                    }
+                    if (mouse.y < this.y && this.y < canvas.height - this.size * 10) {
+                        this.y += 10;
+                    }
+                    if (mouse.y > this.y && this.y > this.size * 10) {
+                        this.y -= 10;
+                    }
+                }
+
+                this.x += this.directionX;
+                this.y += this.directionY;
+                this.draw();
+            }
+        }
+
+        let mouse = {
+            x: null,
+            y: null,
+            radius: (canvas.height/80) * (canvas.width/80)
+        }
+
+        window.addEventListener('mousemove', function(event) {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+
+        function init() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 9000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                let size = (Math.random() * 5) + 1;
+                let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+                let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+                let directionX = (Math.random() * 2) - 1;
+                let directionY = (Math.random() * 2) - 1;
+                let color = '#333';
+
+                particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
+            }
+        }
+
+        function connect() {
+            let opacityValue = 1;
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) + ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+                    
+                    if (distance < (canvas.width/7) * (canvas.height/7)) {
+                        opacityValue = 1 - (distance/20000);
+                        ctx.strokeStyle = 'rgba(50, 50, 50,' + opacityValue + ')'; 
+                        
+                        // If close to mouse, make lines neon
+                        let mouseDist = ((particlesArray[a].x - mouse.x)**2 + (particlesArray[a].y - mouse.y)**2);
+                        if(mouseDist < 20000) {
+                            ctx.strokeStyle = 'rgba(204, 255, 0,' + opacityValue + ')';
+                        }
+
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+            
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+            }
+            connect();
+        }
+
+        window.addEventListener('resize', function() {
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+            mouse.radius = ((canvas.height/80) * (canvas.height/80));
+            init();
+        });
+
+        init();
+        animate();
+
+    </script>
+</body>
+</html>
