@@ -2,882 +2,433 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAX_ENTROPY_PORTFOLIO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Block Builder 3D</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
     <style>
-        :root {
-            --neon-green: #ccff00;
-            --neon-pink: #ff0099;
-            --void-black: #050505;
-            --off-white: #f0f0f0;
-            --terminal-bg: rgba(10, 10, 10, 0.95);
-        }
-
-        * {
-            cursor: none; /* We build our own cursor */
-            box-sizing: border-box;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
         body {
-            background-color: var(--void-black);
-            color: var(--off-white);
-            font-family: 'Space Mono', monospace;
-            overflow-x: hidden;
             margin: 0;
-        }
-
-        /* Scrollbar Hide */
-        ::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
-
-        /* Typography */
-        .display-font {
-            font-family: 'Syncopate', sans-serif;
-            text-transform: uppercase;
-            line-height: 0.8;
-        }
-
-        /* Custom Cursor */
-        #cursor-dot,
-        #cursor-outline {
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            z-index: 9999;
-            pointer-events: none;
-        }
-
-        #cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--neon-green);
-        }
-
-        #cursor-outline {
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--neon-green);
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
-            mix-blend-mode: difference;
-        }
-
-        body:hover #cursor-outline {
-            opacity: 1;
-        }
-
-        /* Glitch Animation */
-        .glitch-wrapper {
-            position: relative;
-        }
-        
-        .glitch-wrapper::before,
-        .glitch-wrapper::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--void-black);
-        }
-
-        .glitch-wrapper::before {
-            left: 2px;
-            text-shadow: -1px 0 var(--neon-pink);
-            clip-path: inset(24% 0 29% 0);
-            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
-        }
-
-        .glitch-wrapper::after {
-            left: -2px;
-            text-shadow: -1px 0 var(--neon-green);
-            clip-path: inset(54% 0 21% 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim-1 {
-            0% { clip-path: inset(40% 0 61% 0); }
-            20% { clip-path: inset(92% 0 1% 0); }
-            40% { clip-path: inset(43% 0 1% 0); }
-            60% { clip-path: inset(25% 0 58% 0); }
-            80% { clip-path: inset(54% 0 7% 0); }
-            100% { clip-path: inset(58% 0 43% 0); }
-        }
-
-        @keyframes glitch-anim-2 {
-            0% { clip-path: inset(24% 0 29% 0); }
-            20% { clip-path: inset(54% 0 21% 0); }
-            40% { clip-path: inset(11% 0 5% 0); }
-            60% { clip-path: inset(80% 0 20% 0); }
-            80% { clip-path: inset(12% 0 80% 0); }
-            100% { clip-path: inset(60% 0 10% 0); }
-        }
-
-        /* Marquee */
-        .marquee-container {
             overflow: hidden;
-            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #canvas-container {
             position: absolute;
-        }
-
-        .marquee-content {
-            display: inline-block;
-            animation: marquee 30s linear infinite;
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-
-        /* Draggable Window */
-        .drag-window {
-            box-shadow: 10px 10px 0px var(--neon-green);
-            transition: box-shadow 0.2s;
-        }
-        .drag-window:active {
-            box-shadow: 5px 5px 0px var(--neon-pink);
-        }
-
-        /* Terminal Modal */
-        #terminal-modal {
-            background-color: var(--terminal-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--neon-green);
-            box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
-        }
-        
-        .terminal-output::-webkit-scrollbar {
-            width: 4px;
-        }
-        .terminal-output::-webkit-scrollbar-thumb {
-            background: var(--neon-green);
-        }
-
-        /* Noise Overlay */
-        .noise {
-            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: 9000;
-            opacity: 0.05;
-            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            z-index: 0;
+            /* Critical for mobile 3D controls */
+            touch-action: none;
+            outline: none;
         }
 
-        /* Mobile Reset */
-        @media (hover: none) {
-            * { cursor: auto !important; }
-            #cursor-dot, #cursor-outline { display: none; }
+        /* Glassmorphism UI Panels */
+        .glass-panel {
+            background: rgba(20, 20, 25, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
-        .hover-invert:hover {
-            background-color: var(--neon-green);
-            color: var(--void-black);
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.3s ease-out forwards;
         }
         
-        canvas#bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -1;
+        .color-btn.active {
+            transform: scale(1.15);
+            border-color: white;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
         }
-
-        .project-card:hover .card-reveal {
-            height: 100%;
-        }
-
-        /* Loading Animation */
-        .loading-bar {
-            width: 100%;
-            height: 2px;
-            background: #333;
-            position: relative;
-            overflow: hidden;
-        }
-        .loading-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 50%;
-            background: var(--neon-green);
-            animation: load 1s infinite ease-in-out;
-        }
-        @keyframes load {
-            0% { left: -50%; }
-            100% { left: 100%; }
-        }
-
-        /* Sarcastic Status Bar */
-        #sarcasm-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 8000;
-            font-family: 'Space Mono', monospace;
-            font-size: 10px;
-            color: var(--neon-green);
-            background: rgba(0,0,0,0.8);
-            padding: 4px 8px;
-            border: 1px solid var(--neon-green);
-            pointer-events: none;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background-color: var(--neon-pink);
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <!-- Custom Cursor Elements -->
-    <div id="cursor-dot"></div>
-    <div id="cursor-outline"></div>
-    
-    <!-- Noise Grain -->
-    <div class="noise"></div>
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
 
-    <!-- Canvas Background -->
-    <canvas id="bg-canvas"></canvas>
+    <!-- UI Overlay -->
+    <div class="relative z-10 w-full h-screen pointer-events-none flex flex-col justify-between p-4 md:p-6">
+        
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <div class="glass-panel rounded-2xl p-4 animate-pop">
+                <h1 class="text-white font-bold text-xl tracking-tight flex items-center gap-2">
+                    <i class="ph-fill ph-cube text-blue-400"></i> Voxel<span class="text-blue-400">Builder</span>
+                </h1>
+                <p class="text-gray-400 text-xs mt-1 hidden md:block">Left Click: Place • Drag: Rotate • Shift+Click: Delete</p>
+            </div>
 
-    <!-- Sarcastic Status Bar -->
-    <div id="sarcasm-bar">
-        <div class="status-dot"></div>
-        <span id="status-text">SYSTEM STATUS: TOLERABLE</span>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50 mix-blend-difference text-white">
-        <div class="text-2xl font-bold glitch-wrapper" data-text="[USER: KARTHIK]">
-            [USER: KARTHIK]
-        </div>
-        <div class="flex gap-8 text-sm md:text-base items-center">
-            <button id="terminal-btn" class="hacker-text text-[var(--neon-green)] hover:text-white font-bold animate-pulse mr-4" data-value=">_ NEURAL_UPLINK">>_ NEURAL_UPLINK</button>
-            <a href="#work" class="hacker-text hover:text-[var(--neon-green)] hidden md:block" data-value="WORK">WORK</a>
-            <a href="#about" class="hacker-text hover:text-[var(--neon-green)] hidden md:block" data-value="ABOUT">ABOUT</a>
-            <a href="#contact" class="hacker-text hover:text-[var(--neon-green)] hidden md:block" data-value="CONTACT">CONTACT</a>
-        </div>
-    </nav>
-
-    <!-- Terminal Modal (Initially Hidden) -->
-    <div id="terminal-modal" class="fixed bottom-10 right-6 md:right-10 w-[90vw] md:w-[500px] h-[400px] z-[10000] hidden flex-col font-mono text-xs md:text-sm text-[var(--neon-green)] p-4 rounded-sm">
-        <div class="flex justify-between items-center border-b border-[var(--neon-green)] pb-2 mb-2 select-none">
-            <span>root@karthik:~/neural_link#</span>
-            <button id="close-terminal" class="hover:bg-[var(--neon-green)] hover:text-black px-2">X</button>
-        </div>
-        <div id="terminal-output" class="terminal-output flex-grow overflow-y-auto mb-2 whitespace-pre-wrap">Welcome to the Neural Uplink.
-Status: JUDGMENTAL.
-Connected to: LOCAL_ROAST_MODULE_v9.0
-Ask anything. I dare you.
-</div>
-        <div class="flex items-center border-t border-gray-800 pt-2">
-            <span class="mr-2 animate-pulse">></span>
-            <input type="text" id="terminal-input" class="bg-transparent border-none outline-none text-white w-full font-mono" placeholder="Impress me..." autocomplete="off">
-        </div>
-    </div>
-
-    <!-- Hero Section -->
-    <section class="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden">
-        <!-- Background Marquee -->
-        <div class="marquee-container text-[15vh] md:text-[20vh] font-bold opacity-10 select-none display-font top-1/2 -translate-y-1/2">
-            <div class="marquee-content text-transparent stroke-white" style="-webkit-text-stroke: 2px var(--off-white);">
-                CSS IS PAIN NO ONE READS THIS CTRL+C CTRL+V EXPERT IT WORKS ON MY MACHINE DEPLOY ON FRIDAY BREAK THE GRID
+            <div class="flex gap-2">
+                 <button id="btn-reset-view" class="glass-panel hover:bg-white/10 text-white p-3 rounded-xl transition-all duration-200" title="Reset Camera">
+                    <i class="ph ph-arrows-counter-clockwise text-xl"></i>
+                </button>
+                <button id="btn-clear" class="glass-panel hover:bg-red-500/20 text-white p-3 rounded-xl transition-all duration-200 group" title="Clear All">
+                    <i class="ph ph-trash text-xl group-hover:text-red-400"></i>
+                </button>
+                <button id="btn-help" class="glass-panel hover:bg-white/10 text-white p-3 rounded-xl transition-all duration-200" title="Help">
+                    <i class="ph ph-question text-xl"></i>
+                </button>
             </div>
         </div>
 
-        <div class="z-10 text-center mix-blend-difference">
-            <p class="text-[var(--neon-green)] mb-4 tracking-widest">CREATIVE DEVELOPER</p>
-            <h1 class="display-font text-6xl md:text-9xl font-black text-white leading-none mb-6 hover-trigger">
-                PURE<br><span class="text-[var(--neon-pink)] italic">CHAOS</span>
-            </h1>
-            <button onclick="document.getElementById('work').scrollIntoView({behavior: 'smooth'})" 
-                    class="border border-[var(--neon-green)] px-8 py-4 text-[var(--neon-green)] hover:bg-[var(--neon-green)] hover:text-black transition-all duration-300 uppercase tracking-widest">
-                Initialize Protocol
+        <!-- Bottom Bar -->
+        <div class="flex flex-col md:flex-row items-end md:items-center justify-center gap-4 pointer-events-auto w-full max-w-4xl mx-auto pb-2">
+            
+            <!-- Mode Switcher -->
+            <div class="glass-panel rounded-2xl p-2 flex gap-2 shrink-0">
+                <button id="mode-build" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white shadow-lg transition-all">
+                    <i class="ph-bold ph-hammer"></i>
+                    <span class="font-semibold text-sm">Build</span>
+                </button>
+                <button id="mode-delete" class="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                    <i class="ph-bold ph-eraser"></i>
+                    <span class="font-semibold text-sm">Delete</span>
+                </button>
+            </div>
+
+            <!-- Color Palette -->
+            <div class="glass-panel rounded-2xl p-3 flex gap-3 overflow-x-auto no-scrollbar max-w-full md:max-w-lg">
+                <div id="color-palette" class="flex gap-3 px-1"></div>
+            </div>
+
+            <!-- Screenshot -->
+             <button id="btn-screenshot" class="glass-panel hover:bg-white/10 text-white p-3.5 rounded-xl transition-all shrink-0" title="Take Screenshot">
+                <i class="ph ph-camera text-xl"></i>
             </button>
         </div>
-    </section>
+    </div>
 
-    <!-- Projects Section -->
-    <section id="work" class="min-h-screen py-24 px-6 md:px-24 relative z-10">
-        <div class="flex flex-col md:flex-row justify-between items-end mb-20 border-b border-[var(--neon-green)] pb-4">
-            <div class="flex items-end gap-4">
-                <h2 class="display-font text-5xl md:text-7xl">ARCHIVE</h2>
-                <span class="text-xl mb-2 animate-pulse text-[var(--neon-pink)]">● REC</span>
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-3xl max-w-md mx-4 text-center transform scale-95 transition-transform duration-300 pointer-events-auto">
+            <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph-duotone ph-mouse-left-click text-3xl text-blue-400"></i>
             </div>
-            <button id="inject-chaos-btn" class="mt-4 md:mt-0 border border-[var(--neon-pink)] text-[var(--neon-pink)] px-4 py-2 text-sm font-mono hover:bg-[var(--neon-pink)] hover:text-black transition-all">
-                ✨ INJECT_CHAOS.exe
+            <h2 class="text-2xl font-bold text-white mb-2">How to Play</h2>
+            <ul class="text-gray-300 text-left space-y-3 mb-6 text-sm">
+                <li class="flex gap-3"><i class="ph-fill ph-cursor-click text-blue-400 mt-1"></i> <span><strong>Click</strong> to place a block.</span></li>
+                <li class="flex gap-3"><i class="ph-fill ph-hand-grabbing text-blue-400 mt-1"></i> <span><strong>Drag background</strong> to rotate view.</span></li>
+                <li class="flex gap-3"><i class="ph-fill ph-eraser text-red-400 mt-1"></i> <span>Use <strong>Delete Mode</strong> to remove blocks.</span></li>
+                <li class="flex gap-3"><i class="ph-fill ph-arrows-out text-blue-400 mt-1"></i> <span><strong>Scroll</strong> or Pinch to zoom.</span></li>
+            </ul>
+            <button id="btn-close-help" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors">
+                Start Building
             </button>
         </div>
+    </div>
 
-        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-12">
-            
-            <!-- Project 1 -->
-            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-[var(--neon-green)]">
-                <div class="absolute -top-3 -left-3 bg-[var(--neon-green)] text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    v2.0.4
-                </div>
-                <h3 class="text-4xl font-bold mb-4 group-hover:text-[var(--neon-green)]">E-COMMERCE<br>DISTORTION</h3>
-                <p class="text-gray-400 mb-8 font-mono text-sm">A shopping experience that hates you. Brutalist design patterns meets conversion optimization. Built with Three.js.</p>
-                <div class="flex gap-2 flex-wrap">
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">REACT</span>
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">WEBGL</span>
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">GSAP</span>
-                </div>
-                <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-[var(--neon-green)] transition-all duration-300 group-hover:h-2"></div>
-            </div>
-
-            <!-- Project 2 -->
-            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-[var(--neon-pink)] mt-0 md:mt-24">
-                 <div class="absolute -top-3 -left-3 bg-[var(--neon-pink)] text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    BETA
-                </div>
-                <h3 class="text-4xl font-bold mb-4 group-hover:text-[var(--neon-pink)]">NEURAL<br>AUDIO VISUALIZER</h3>
-                <p class="text-gray-400 mb-8 font-mono text-sm">Real-time frequency analysis mapped to generated terrain. Feed it mp3s, watch mountains grow.</p>
-                <div class="flex gap-2 flex-wrap">
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">CANVAS API</span>
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">AUDIO API</span>
-                </div>
-                 <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-[var(--neon-pink)] transition-all duration-300 group-hover:h-2"></div>
-            </div>
-
-            <!-- Project 3 -->
-            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-cyan-400">
-                <div class="absolute -top-3 -left-3 bg-cyan-400 text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    LEGACY
-                </div>
-                <h3 class="text-4xl font-bold mb-4 group-hover:text-cyan-400">CYBER<br>SECURITY DASH</h3>
-                <p class="text-gray-400 mb-8 font-mono text-sm">Dark mode analytic dashboard for threat detection. High density data visualization.</p>
-                <div class="flex gap-2 flex-wrap">
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">D3.JS</span>
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">VUE</span>
-                </div>
-                 <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-cyan-400 transition-all duration-300 group-hover:h-2"></div>
-            </div>
-
-            <!-- Project 4 (New GCP Section) -->
-            <div class="project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-yellow-400 mt-0 md:mt-24">
-                 <div class="absolute -top-3 -left-3 bg-yellow-400 text-black text-xs font-bold px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    DEPLOYED
-                </div>
-                <h3 class="text-4xl font-bold mb-4 group-hover:text-yellow-400">CLOUD<br>INFRASTRUCTURE</h3>
-                <p class="text-gray-400 mb-8 font-mono text-sm">GCP architectural mastery. Auto-scaling Kubernetes clusters with Terraform and chaos engineering resilience.</p>
-                <div class="flex gap-2 flex-wrap">
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">GCP</span>
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">K8S</span>
-                    <span class="border border-white/30 px-2 py-1 text-xs rounded-full">TERRAFORM</span>
-                </div>
-                 <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-yellow-400 transition-all duration-300 group-hover:h-2"></div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- Draggable About Section -->
-    <section id="about" class="h-[80vh] w-full flex items-center justify-center relative z-20 overflow-hidden pointer-events-none">
-        
-        <!-- The Window -->
-        <div id="drag-element" class="drag-window pointer-events-auto bg-[#1a1a1a] w-full max-w-lg border-2 border-[var(--neon-green)] absolute p-0 cursor-grab active:cursor-grabbing">
-            <!-- Window Header -->
-            <div class="bg-[var(--neon-green)] p-2 flex justify-between items-center select-none" id="drag-header">
-                <span class="text-black font-bold text-sm">:: SYSTEM_PROPERTIES.exe</span>
-                <div class="flex gap-1">
-                    <div class="w-3 h-3 bg-black"></div>
-                    <div class="w-3 h-3 bg-black"></div>
-                    <div class="w-3 h-3 bg-transparent border border-black"></div>
-                </div>
-            </div>
-            
-            <!-- Window Body -->
-            <div class="p-6 md:p-8">
-                <div class="flex gap-6 mb-6">
-                    <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="Avatar" class="w-24 h-24 border-2 border-white grayscale hover:grayscale-0 transition-all">
-                    <div class="flex flex-col justify-center">
-                        <h3 class="text-xl font-bold text-[var(--neon-pink)]">KARTHIK_RATHOD</h3>
-                        <p class="text-xs text-gray-400">Full Stack Dev | GCP Architect</p>
-                        <p class="text-xs text-[var(--neon-green)] mt-1">STATUS: ONLINE</p>
-                    </div>
-                </div>
-                <p class="text-sm leading-relaxed mb-4 font-mono">
-                    I don't just write code; I force electrons to do my bidding. Obsessed with interactive web experiences, WebGL, and breaking standard UI patterns.
-                </p>
-                <p class="text-sm leading-relaxed font-mono">
-                    Currently building things that shouldn't work in a browser, but do.
-                </p>
-                
-                <div class="mt-6 border-t border-gray-700 pt-4 flex justify-between text-xs font-mono text-gray-500">
-                    <span>MEMORY: 64GB</span>
-                    <span>CPU: OVERCLOCKED</span>
-                </div>
-            </div>
-        </div>
-
-    </section>
-
-    <!-- Contact Footer -->
-    <section id="contact" class="py-24 bg-[var(--neon-green)] text-black relative z-10">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="display-font text-5xl md:text-8xl mb-8 font-black mix-blend-multiply">LET'S COLLIDE</h2>
-            <p class="text-xl font-bold mb-12 max-w-2xl mx-auto">Have a crazy idea? I'm expensive, but I'm worth it.</p>
-            
-            <div class="flex flex-wrap justify-center gap-4 md:gap-8">
-                <a href="#" class="border-2 border-black px-8 py-3 text-lg font-bold hover:bg-black hover:text-[var(--neon-green)] transition-colors">EMAIL_ME</a>
-                <a href="#" class="border-2 border-black px-8 py-3 text-lg font-bold hover:bg-black hover:text-[var(--neon-green)] transition-colors">TWITTER</a>
-                <a href="#" class="border-2 border-black px-8 py-3 text-lg font-bold hover:bg-black hover:text-[var(--neon-green)] transition-colors">GITHUB</a>
-            </div>
-
-            <div class="mt-24 font-mono text-xs opacity-50">
-                © 2025 CHAOS SYSTEMS INC. <br> 
-                <span class="italic">"I spent 4 hours centering a div for this?"</span>
-            </div>
-        </div>
-    </section>
-
-    <script>
-        // --- SARCASM MODULE ---
-        // 1. Console Spam
-        console.log("%c STOP SNOOPING ", "background: #ccff00; color: black; font-size: 30px; font-weight: bold; padding: 10px;");
-        console.log("%c Serious question: Do you have anything better to do?", "color: #ff0099; font-size: 16px;");
-        console.log("Looking for bugs? Just assume they are features.");
-
-        // 2. Status Ticker Logic
-        const sarcasmQuotes = [
-            "STATUS: TOLERABLE",
-            "OPTIMIZING DISAPPOINTMENT...",
-            "0 DAYS SINCE LAST NERVOUS BREAKDOWN",
-            "DELETING PRODUCTION DB...",
-            "DOWNLOADING MORE RAM...",
-            "JUDGING YOUR BROWSER HISTORY...",
-            "YOUR IP ADDRESS LOOKS FUNNY",
-            "GENERATING SPAGHETTI CODE...",
-            "WHY ARE YOU STILL SCROLLING?",
-            "MEMORY LEAK DETECTED (IN YOUR BRAIN)"
-        ];
-
-        const statusText = document.getElementById('status-text');
-        setInterval(() => {
-            const randomQuote = sarcasmQuotes[Math.floor(Math.random() * sarcasmQuotes.length)];
-            statusText.innerText = randomQuote;
-            statusText.parentElement.classList.add('animate-pulse');
-            setTimeout(() => statusText.parentElement.classList.remove('animate-pulse'), 200);
-        }, 4000);
-
-        // --- DEVELOPER ROASTS LIBRARY (HURT THE SOUL EDITION) ---
-        const developerRoasts = [
-            "Your entire career is built on copy-pasting code you don't understand from people smarter than you.",
-            "If I had a dollar for every memory leak you created, I could hire a real developer to replace you.",
-            "Imposter syndrome? No, that's just your subconscious realizing you actually have no idea what you're doing.",
-            "Your variable naming convention looks like a cat walked across the keyboard while having a seizure.",
-            "I bet you think `npm install` counts as coding. Adorable.",
-            "The only thing 'clean' about your code is that you wiped your brain before writing it.",
-            "Every time you push to production, a senior engineer considers retirement.",
-            "Your git commit messages are as meaningless as your contribution to this team.",
-            "You use `any` in TypeScript because you're too lazy to define a type, just like you're too lazy to define a career path.",
-            "I've seen better logic in a fortune cookie written by an AI hallucinating.",
-            "You think you're a 10x developer? You're a 10x liability.",
-            "Stop looking for a library. The problem isn't the tools, it's the user (you).",
-            "Your understanding of asynchronous programming is blocking the entire team's progress.",
-            "Refactoring your code isn't 'tech debt payment', it's a hazardous waste cleanup operation.",
-            "You write comments to explain *what* the code does because you have no idea *why* it does it.",
-            "Your CSS architecture is just 'add !important until it stops moving'.",
-            "You're one `rm -rf` away from doing this company the biggest favor of its existence.",
-            "Don't worry, ChatGPT will replace you soon. It already writes better code and complains less.",
-            "Your code is so spaghetti, it just got aggressive Italian citizenship.",
-            "You spend 4 hours configuring your terminal theme and 4 minutes understanding the requirements.",
-            "Debugging your code is like trying to solve a murder mystery where you are both the detective and the killer.",
-            "You claim to know C++, but you can't even manage your own memory, let alone your life.",
-            "Your unit tests are just `assert(true)` because you're terrified of red text.",
-            "You think 'Agile' means changing your mind every 5 minutes because you didn't plan anything.",
-            "The only design pattern you know is 'Copy-Paste-Pray'.",
-            "Your portfolio is flashy to distract from the fact that your backend logic is held together by duct tape and dreams.",
-            "I see you pushed directly to main. Stupid, but brave. Mostly stupid.",
-            "Documentation? You mean the code, right? The code is self-documenting. (Spoiler: It isn't).",
-            "Git blame shows YOU wrote this garbage 3 months ago. Don't look at me.",
-            "You have 400 tabs open. You're not multitasking, you're hoarding RAM because you can't remember syntax."
-        ];
-
-        // --- MOCK CHAOS GENERATOR ---
-        const mockProjects = [
-            {
-                title: "BLOCKCHAIN TOASTER",
-                description: "IoT device that mines crypto while burning your bread. Requires 3 GPUs.",
-                version: "v0.0.1-hot",
-                techStack: ["SOLIDITY", "RUST", "FIREHAZARD"]
-            },
-            {
-                title: "TINDER FOR CATS",
-                description: "Facial recognition for felines. Swipe right to meow. GDPR non-compliant.",
-                version: "v9.lives",
-                techStack: ["TENSORFLOW", "MEOW.JS", "AWS"]
-            },
-            {
-                title: "VIRTUAL GRASS TOUCHER",
-                description: "VR simulation for devs who haven't been outside in weeks. Haptic feedback included.",
-                version: "v1.0.touch",
-                techStack: ["UNITY", "WEBXR", "REALITY"]
-            },
-            {
-                title: "SCREAM-DRIVEN DEVELOPMENT",
-                description: "Microservice that deploys code only when microphone detects high decibel swearing.",
-                version: "v66.6",
-                techStack: ["AUDIO API", "DOCKER", "RAGE"]
-            },
-            {
-                title: "INFINITE SCROLL OF DOOM",
-                description: "A social network with no content, just loading spinners that never finish. Art.",
-                version: "v∞",
-                techStack: ["HTML", "CSS", "PAIN"]
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
             }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Configuration ---
+        const COLORS = [
+            0xE11D48, 0xF97316, 0xFACC15, 0x22C55E, 0x06B6D4, 
+            0x3B82F6, 0x8B5CF6, 0xEC4899, 0xFFFFFF, 0x9CA3AF, 0x1F2937
         ];
-
-        // --- FEATURE 1: NEURAL UPLINK (TERMINAL CHAT) ---
-
-        const terminalModal = document.getElementById('terminal-modal');
-        const terminalBtn = document.getElementById('terminal-btn');
-        const closeTerminal = document.getElementById('close-terminal');
-        const terminalInput = document.getElementById('terminal-input');
-        const terminalOutput = document.getElementById('terminal-output');
-
-        terminalBtn.addEventListener('click', () => {
-            terminalModal.style.display = 'flex';
-            terminalInput.focus();
-        });
-
-        closeTerminal.addEventListener('click', () => {
-            terminalModal.style.display = 'none';
-        });
-
-        terminalInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = terminalInput.value;
-                if (!query) return;
-
-                // Add user command to log
-                terminalOutput.innerHTML += `\n<span class="text-white">root@karthik:~$</span> ${query}`;
-                terminalInput.value = '';
-                terminalInput.disabled = true; // Disable input while "thinking"
-                
-                // Random delay between 1000ms (1s) and 5000ms (5s)
-                const delay = Math.floor(Math.random() * 4000) + 1000;
-                
-                // Show loading state
-                const loadingId = "loading-" + Date.now();
-                terminalOutput.innerHTML += `\n<span id="${loadingId}" class="animate-pulse text-gray-500">JUDGING_YOU... [${delay}ms latency]</span>`;
-                terminalOutput.scrollTop = terminalOutput.scrollHeight;
-
-                setTimeout(() => {
-                    // Remove loading message
-                    const loadingElement = document.getElementById(loadingId);
-                    if (loadingElement) loadingElement.remove();
-
-                    // Pick random roast
-                    const roast = developerRoasts[Math.floor(Math.random() * developerRoasts.length)];
-
-                    // Typewriter effect for response
-                    terminalOutput.innerHTML += `\n<span style="color:var(--neon-green)">[SYSTEM_ROAST]:</span> ${roast}\n`;
-                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
-                    
-                    // Re-enable input
-                    terminalInput.disabled = false;
-                    terminalInput.focus();
-                }, delay);
-            }
-        });
-
-        // --- FEATURE 2: INJECT CHAOS (PROJECT GENERATOR) ---
         
-        const injectBtn = document.getElementById('inject-chaos-btn');
-        const projectsGrid = document.getElementById('projects-grid');
+        let selectedColor = COLORS[5];
+        let isDeleteMode = false;
+        let isInteractionEnabled = true;
+        
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111827);
+        scene.fog = new THREE.Fog(0x111827, 200, 2000);
 
-        injectBtn.addEventListener('click', () => {
-            const originalText = injectBtn.innerText;
-            injectBtn.innerHTML = `WASTING RESOURCES... <span class="loading-bar block mt-1"></span>`;
-            injectBtn.disabled = true;
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
+        camera.position.set(500, 800, 1300);
 
-            // Simulate network delay for "realism"
-            setTimeout(() => {
-                const project = mockProjects[Math.floor(Math.random() * mockProjects.length)];
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimize for high DPI
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        const container = document.getElementById('canvas-container');
+        container.appendChild(renderer.domElement);
 
-                // Create new card
-                const newCard = document.createElement('div');
-                newCard.className = 'project-card group relative border border-white/20 bg-black/50 backdrop-blur-sm p-8 transition-all hover:border-[var(--neon-pink)] animate-[pulse_0.5s_ease-in-out]';
-                newCard.innerHTML = `
-                    <div class="absolute -top-3 -left-3 bg-[var(--neon-pink)] text-black text-xs font-bold px-2 py-1">
-                        ${project.version}
-                    </div>
-                    <h3 class="text-4xl font-bold mb-4 group-hover:text-[var(--neon-pink)] uppercase break-words">${project.title}</h3>
-                    <p class="text-gray-400 mb-8 font-mono text-sm">${project.description}</p>
-                    <div class="flex gap-2 flex-wrap">
-                        ${project.techStack.map(tech => `<span class="border border-white/30 px-2 py-1 text-xs rounded-full uppercase">${tech}</span>`).join('')}
-                    </div>
-                    <div class="card-reveal absolute bottom-0 left-0 w-full h-1 bg-[var(--neon-pink)] transition-all duration-300 group-hover:h-2"></div>
-                `;
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.02; // Ground collision
+        controls.minDistance = 100;
+        controls.maxDistance = 5000;
+        controls.target.set(0,0,0);
 
-                // Insert after the first card
-                if (projectsGrid.children.length > 0) {
-                    projectsGrid.insertBefore(newCard, projectsGrid.children[1]);
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0x606060, 1.5);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        dirLight.position.set(300, 1000, 500).normalize();
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        const d = 2000;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        scene.add(dirLight);
+
+        // --- Environment ---
+        // Massive invisible plane for raycasting everywhere
+        const planeGeo = new THREE.PlaneGeometry(10000, 10000);
+        planeGeo.rotateX(-Math.PI / 2);
+        const planeMat = new THREE.MeshBasicMaterial({ visible: false });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        scene.add(plane);
+
+        const gridHelper = new THREE.GridHelper(2000, 40, 0x4b5563, 0x374151);
+        scene.add(gridHelper);
+
+        // Block definition
+        const blockSize = 50;
+        const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize); 
+        const getMaterial = (color) => new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.1 });
+
+        // Ghost Block
+        const rollOverGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+        const rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
+        const rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMaterial);
+        scene.add(rollOverMesh);
+
+        // --- Logic ---
+        const objects = [plane];
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        // --- UI Setup ---
+        const paletteContainer = document.getElementById('color-palette');
+        COLORS.forEach((colorHex, index) => {
+            const btn = document.createElement('button');
+            btn.className = `color-btn w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-transparent transition-all duration-200 shrink-0`;
+            btn.style.backgroundColor = '#' + colorHex.toString(16).padStart(6, '0');
+            if (index === 5) btn.classList.add('active');
+            
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent click from hitting canvas
+                selectedColor = colorHex;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if(isDeleteMode) toggleMode('build');
+            });
+            paletteContainer.appendChild(btn);
+        });
+
+        const btnBuild = document.getElementById('mode-build');
+        const btnDelete = document.getElementById('mode-delete');
+
+        function toggleMode(mode) {
+            isDeleteMode = (mode === 'delete');
+            if (isDeleteMode) {
+                btnDelete.classList.replace('text-gray-400', 'bg-red-600');
+                btnDelete.classList.replace('hover:bg-white/10', 'text-white');
+                btnDelete.classList.add('shadow-lg');
+                
+                btnBuild.classList.replace('bg-blue-600', 'text-gray-400');
+                btnBuild.classList.replace('text-white', 'hover:bg-white/10');
+                btnBuild.classList.remove('shadow-lg');
+                
+                rollOverMesh.visible = false;
+                document.body.style.cursor = 'not-allowed';
+            } else {
+                btnBuild.classList.replace('text-gray-400', 'bg-blue-600');
+                btnBuild.classList.replace('hover:bg-white/10', 'text-white');
+                btnBuild.classList.add('shadow-lg');
+
+                btnDelete.classList.replace('bg-red-600', 'text-gray-400');
+                btnDelete.classList.replace('text-white', 'hover:bg-white/10');
+                btnDelete.classList.remove('shadow-lg');
+
+                rollOverMesh.visible = true;
+                rollOverMaterial.color.setHex(0xff0000);
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        btnBuild.addEventListener('click', () => toggleMode('build'));
+        btnDelete.addEventListener('click', () => toggleMode('delete'));
+
+        // --- Robust Interaction Handlers ---
+        let mouseDownTime = 0;
+        let isDownOnUI = false;
+        const clickThreshold = 250; //ms
+
+        function updatePointer(event) {
+            // Handle both Mouse and Touch events standardly
+            const x = event.clientX || (event.touches && event.touches[0]?.clientX);
+            const y = event.clientY || (event.touches && event.touches[0]?.clientY);
+            
+            if (x !== undefined && y !== undefined) {
+                pointer.set(
+                    (x / window.innerWidth) * 2 - 1,
+                    -(y / window.innerHeight) * 2 + 1
+                );
+            }
+        }
+
+        function onPointerMove(event) {
+            updatePointer(event);
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(objects, false);
+
+            if (intersects.length > 0 && !isDeleteMode) {
+                const intersect = intersects[0];
+                rollOverMesh.visible = true;
+                rollOverMesh.position.copy(intersect.point).add(intersect.face.normal);
+                rollOverMesh.position.divideScalar(blockSize).floor().multiplyScalar(blockSize).addScalar(blockSize / 2);
+                rollOverMaterial.color.setHex(selectedColor);
+            } else {
+                // Keep ghost hidden if not hitting anything or in delete mode
+                rollOverMesh.visible = false;
+            }
+        }
+
+        function onPointerDown(event) {
+            // Check if interacting with UI
+            if (event.target.closest('.glass-panel')) {
+                isDownOnUI = true;
+                return;
+            }
+            isDownOnUI = false;
+            mouseDownTime = Date.now();
+        }
+
+        function onPointerUp(event) {
+            // If we started clicking on UI, ignore the release
+            if (isDownOnUI) return;
+            // If we ended clicking on UI, ignore
+            if (event.target.closest('.glass-panel')) return;
+            // If it was a drag (rotating camera), ignore
+            if (Date.now() - mouseDownTime > clickThreshold) return;
+
+            // Process Click
+            updatePointer(event);
+            raycaster.setFromCamera(pointer, camera);
+            const intersects = raycaster.intersectObjects(objects, false);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+
+                if (isDeleteMode || event.shiftKey) {
+                    if (intersect.object !== plane) {
+                        scene.remove(intersect.object);
+                        objects.splice(objects.indexOf(intersect.object), 1);
+                    }
                 } else {
-                    projectsGrid.appendChild(newCard);
-                }
-
-                // Scroll to it
-                newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                injectBtn.innerText = originalText;
-                injectBtn.disabled = false;
-
-            }, 1500); // 1.5s fake delay
-        });
-
-        // --- EXISTING LOGIC ---
-
-        // 1. Custom Cursor Logic
-        const cursorDot = document.getElementById('cursor-dot');
-        const cursorOutline = document.getElementById('cursor-outline');
-
-        window.addEventListener('mousemove', (e) => {
-            const posX = e.clientX;
-            const posY = e.clientY;
-
-            // Dot follows instantly
-            cursorDot.style.left = `${posX}px`;
-            cursorDot.style.top = `${posY}px`;
-
-            // Outline follows with lag
-            cursorOutline.animate({
-                left: `${posX}px`,
-                top: `${posY}px`
-            }, { duration: 500, fill: "forwards" });
-        });
-
-        // Hover effect on interactive elements for cursor
-        const interactables = document.querySelectorAll('a, button, .project-card');
-        interactables.forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                cursorOutline.style.width = '80px';
-                cursorOutline.style.height = '80px';
-                cursorOutline.style.backgroundColor = 'white';
-                cursorOutline.style.mixBlendMode = 'difference';
-            });
-            el.addEventListener('mouseleave', () => {
-                cursorOutline.style.width = '40px';
-                cursorOutline.style.height = '40px';
-                cursorOutline.style.backgroundColor = 'transparent';
-                cursorOutline.style.mixBlendMode = 'difference';
-            });
-        });
-
-        // 2. "Hacker" Text Scramble Effect
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%&";
-        
-        document.querySelectorAll(".hacker-text").forEach(item => {
-            item.onmouseover = event => {
-                let iterations = 0;
-                const interval = setInterval(() => {
-                    event.target.innerText = event.target.innerText
-                        .split("")
-                        .map((letter, index) => {
-                            if(index < iterations) {
-                                return event.target.dataset.value[index];
-                            }
-                            return letters[Math.floor(Math.random() * 26)];
-                        })
-                        .join("");
+                    // Create Block
+                    const voxel = new THREE.Mesh(blockGeo, getMaterial(selectedColor));
+                    voxel.position.copy(intersect.point).add(intersect.face.normal);
+                    voxel.position.divideScalar(blockSize).floor().multiplyScalar(blockSize).addScalar(blockSize / 2);
                     
-                    if(iterations >= event.target.dataset.value.length){ 
-                        clearInterval(interval);
-                    }
-                    
-                    iterations += 1 / 3;
-                }, 30);
+                    voxel.castShadow = true;
+                    voxel.receiveShadow = true;
+
+                    scene.add(voxel);
+                    objects.push(voxel);
+
+                    // Animate Pop
+                    voxel.scale.set(0,0,0);
+                    let s = 0;
+                    const animateSpawn = () => {
+                        s += 0.15;
+                        voxel.scale.set(s,s,s);
+                        if(s < 1) requestAnimationFrame(animateSpawn);
+                        else voxel.scale.set(1,1,1);
+                    };
+                    animateSpawn();
+                }
             }
+        }
+
+        // Attach listeners to document to catch all events
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerdown', onPointerDown);
+        document.addEventListener('pointerup', onPointerUp);
+
+        // Helpers
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            for (let i = objects.length - 1; i > 0; i--) {
+                scene.remove(objects[i]);
+            }
+            objects.splice(1); // Keep plane
         });
 
-        // 3. Draggable Window Logic
-        const dragElement = document.getElementById("drag-element");
-        const dragHeader = document.getElementById("drag-header");
-        
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-        dragHeader.onmousedown = dragMouseDown;
-
-        function dragMouseDown(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-            dragElement.style.cursor = 'grabbing';
-            // Scale up slightly when dragging
-            dragElement.style.transform = "scale(1.02)";
-        }
-
-        function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            dragElement.style.top = (dragElement.offsetTop - pos2) + "px";
-            dragElement.style.left = (dragElement.offsetLeft - pos1) + "px";
-        }
-
-        function closeDragElement() {
-            document.onmouseup = null;
-            document.onmousemove = null;
-            dragElement.style.cursor = 'grab';
-            dragElement.style.transform = "scale(1)";
-        }
-
-        // 4. Canvas Background Animation (Geometric Web)
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let particlesArray;
-
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        class Particle {
-            constructor(x, y, directionX, directionY, size, color) {
-                this.x = x;
-                this.y = y;
-                this.directionX = directionX;
-                this.directionY = directionY;
-                this.size = size;
-                this.color = color;
-            }
-
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-                ctx.fillStyle = '#333';
-                ctx.fill();
-            }
-
-            update() {
-                if (this.x > canvas.width || this.x < 0) {
-                    this.directionX = -this.directionX;
-                }
-                if (this.y > canvas.height || this.y < 0) {
-                    this.directionY = -this.directionY;
-                }
-
-                // Mouse Interaction
-                let dx = mouse.x - this.x;
-                let dy = mouse.y - this.y;
-                let distance = Math.sqrt(dx*dx + dy*dy);
-                
-                if (distance < mouse.radius + this.size){
-                    if (mouse.x < this.x && this.x < canvas.width - this.size * 10) {
-                        this.x += 10;
-                    }
-                    if (mouse.x > this.x && this.x > this.size * 10) {
-                        this.x -= 10;
-                    }
-                    if (mouse.y < this.y && this.y < canvas.height - this.size * 10) {
-                        this.y += 10;
-                    }
-                    if (mouse.y > this.y && this.y > this.size * 10) {
-                        this.y -= 10;
-                    }
-                }
-
-                this.x += this.directionX;
-                this.y += this.directionY;
-                this.draw();
-            }
-        }
-
-        let mouse = {
-            x: null,
-            y: null,
-            radius: (canvas.height/80) * (canvas.width/80)
-        }
-
-        window.addEventListener('mousemove', function(event) {
-            mouse.x = event.x;
-            mouse.y = event.y;
+        document.getElementById('btn-reset-view').addEventListener('click', () => {
+            controls.reset();
+            camera.position.set(500, 800, 1300);
+            camera.lookAt(0, 0, 0);
         });
 
-        function init() {
-            particlesArray = [];
-            let numberOfParticles = (canvas.height * canvas.width) / 9000;
-            for (let i = 0; i < numberOfParticles; i++) {
-                let size = (Math.random() * 5) + 1;
-                let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
-                let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
-                let directionX = (Math.random() * 2) - 1;
-                let directionY = (Math.random() * 2) - 1;
-                let color = '#333';
+        document.getElementById('btn-screenshot').addEventListener('click', () => {
+            renderer.render(scene, camera);
+            const link = document.createElement('a');
+            link.download = 'my-build.png';
+            link.href = renderer.domElement.toDataURL('image/png');
+            link.click();
+        });
 
-                particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
-            }
-        }
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-        function connect() {
-            let opacityValue = 1;
-            for (let a = 0; a < particlesArray.length; a++) {
-                for (let b = a; b < particlesArray.length; b++) {
-                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) + ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
-                    
-                    if (distance < (canvas.width/7) * (canvas.height/7)) {
-                        opacityValue = 1 - (distance/20000);
-                        ctx.strokeStyle = 'rgba(50, 50, 50,' + opacityValue + ')'; 
-                        
-                        // If close to mouse, make lines neon
-                        let mouseDist = ((particlesArray[a].x - mouse.x)**2 + (particlesArray[a].y - mouse.y)**2);
-                        if(mouseDist < 20000) {
-                            ctx.strokeStyle = 'rgba(204, 255, 0,' + opacityValue + ')';
-                        }
-
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
-                        ctx.stroke();
-                    }
-                }
-            }
-        }
+        // Modal
+        const modal = document.getElementById('help-modal');
+        document.getElementById('btn-help').addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.children[0].classList.remove('scale-95');
+            }, 10);
+        });
+        document.getElementById('btn-close-help').addEventListener('click', () => {
+            modal.classList.add('opacity-0');
+            modal.children[0].classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        });
 
         function animate() {
             requestAnimationFrame(animate);
-            ctx.clearRect(0, 0, innerWidth, innerHeight);
-            
-            for (let i = 0; i < particlesArray.length; i++) {
-                particlesArray[i].update();
-            }
-            connect();
+            controls.update();
+            renderer.render(scene, camera);
         }
-
-        window.addEventListener('resize', function() {
-            canvas.width = innerWidth;
-            canvas.height = innerHeight;
-            mouse.radius = ((canvas.height/80) * (canvas.height/80));
-            init();
-        });
-
-        init();
         animate();
 
     </script>
