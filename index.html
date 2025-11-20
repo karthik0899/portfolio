@@ -2,434 +2,655 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Block Builder 3D</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Skyrise Flight Sim</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
             user-select: none;
             -webkit-user-select: none;
         }
 
         #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        /* HUD Overlay */
+        #hud {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
-            /* Critical for mobile 3D controls */
-            touch-action: none;
-            outline: none;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        /* Glassmorphism UI Panels */
-        .glass-panel {
-            background: rgba(20, 20, 25, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
         }
 
-        .no-scrollbar::-webkit-scrollbar {
+        .hud-text {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .critical {
+            color: #f00;
+            text-shadow: 0 0 10px #f00;
+            border-color: rgba(255, 0, 0, 0.5);
             display: none;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #0ff;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
         }
 
-        @keyframes popIn {
-            0% { transform: scale(0.9); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        /* Game Over Screen */
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            display: none;
+            pointer-events: auto;
         }
-        .animate-pop {
-            animation: popIn 0.3s ease-out forwards;
+
+        h1 {
+            color: #ff0055;
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #ff0055;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        p {
+            color: #fff;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+
+        button {
+            background: transparent;
+            color: #0ff;
+            border: 2px solid #0ff;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        button:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+        }
+
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            display: none; /* Shown via JS on touch devices */
+            pointer-events: none;
+        }
+
+        .control-zone {
+            position: absolute;
+            bottom: 20px;
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            touch-action: none;
+        }
+
+        #joystick-zone {
+            left: 20px;
+            width: 120px;
+            height: 120px;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        #boost-btn {
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 100, 100, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
         }
         
-        .color-btn.active {
-            transform: scale(1.15);
-            border-color: white;
-            box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+        #boost-btn:active {
+            background: rgba(255, 100, 100, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .hud-text { font-size: 12px; }
+            #crosshair { width: 20px; height: 20px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 3D Canvas -->
+    <div id="hud">
+        <div class="hud-row">
+            <div class="hud-text">SPEED: <span id="speed-val">0</span> KM/H</div>
+            <div class="hud-text">ALT: <span id="alt-val">0</span> FT</div>
+        </div>
+        <div id="crosshair"></div>
+        <div class="hud-row" style="margin-top: auto;">
+            <div class="hud-text critical" id="warning-msg">PULL UP!</div>
+            <div class="hud-text" id="score-display">DISTANCE: 0</div>
+        </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="joystick-zone" class="control-zone">
+            <div id="joystick-knob"></div>
+        </div>
+        <div id="boost-btn" class="control-zone">BOOST</div>
+    </div>
+
+    <div id="game-over">
+        <h1>CRASHED</h1>
+        <p id="crash-reason">You hit a building.</p>
+        <p>Total Distance: <span id="final-score">0</span></p>
+        <button onclick="resetGame()">Reboot System</button>
+    </div>
+
     <div id="canvas-container"></div>
 
-    <!-- UI Overlay -->
-    <div class="relative z-10 w-full h-screen pointer-events-none flex flex-col justify-between p-4 md:p-6">
+    <script>
+        // --- Constants & Config ---
+        const CITY_SIZE = 4000;
+        const BUILDINGS_COUNT = 600;
+        const FOG_COLOR = 0x050714;
+        const BASE_SPEED = 1.5;
+        const MAX_SPEED = 3.5;
+        const ROTATION_SPEED = 0.03;
+        const BUILDING_COLORS = [0x00ffff, 0xff00ff, 0x4444ff, 0x111111, 0x222222];
         
-        <!-- Top Bar -->
-        <div class="flex justify-between items-start pointer-events-auto">
-            <div class="glass-panel rounded-2xl p-4 animate-pop">
-                <h1 class="text-white font-bold text-xl tracking-tight flex items-center gap-2">
-                    <i class="ph-fill ph-cube text-blue-400"></i> Voxel<span class="text-blue-400">Builder</span>
-                </h1>
-                <p class="text-gray-400 text-xs mt-1 hidden md:block">Left Click: Place • Drag: Rotate • Shift+Click: Delete</p>
-            </div>
+        // --- Global State ---
+        let scene, camera, renderer;
+        let player, cityGroup;
+        let buildings = [];
+        let gameActive = true;
+        let speed = BASE_SPEED;
+        let distanceTraveled = 0;
+        let clock = new THREE.Clock();
+        
+        // Inputs
+        const keys = { w: false, a: false, s: false, d: false, space: false, shift: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        const touchInput = { x: 0, y: 0, boosting: false };
 
-            <div class="flex gap-2">
-                 <button id="btn-reset-view" class="glass-panel hover:bg-white/10 text-white p-3 rounded-xl transition-all duration-200" title="Reset Camera">
-                    <i class="ph ph-arrows-counter-clockwise text-xl"></i>
-                </button>
-                <button id="btn-clear" class="glass-panel hover:bg-red-500/20 text-white p-3 rounded-xl transition-all duration-200 group" title="Clear All">
-                    <i class="ph ph-trash text-xl group-hover:text-red-400"></i>
-                </button>
-                <button id="btn-help" class="glass-panel hover:bg-white/10 text-white p-3 rounded-xl transition-all duration-200" title="Help">
-                    <i class="ph ph-question text-xl"></i>
-                </button>
-            </div>
-        </div>
+        // DOM Elements
+        const elSpeed = document.getElementById('speed-val');
+        const elAlt = document.getElementById('alt-val');
+        const elDist = document.getElementById('score-display');
+        const elWarning = document.getElementById('warning-msg');
+        const elGameOver = document.getElementById('game-over');
+        const elFinalScore = document.getElementById('final-score');
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const boostBtn = document.getElementById('boost-btn');
 
-        <!-- Bottom Bar -->
-        <div class="flex flex-col md:flex-row items-end md:items-center justify-center gap-4 pointer-events-auto w-full max-w-4xl mx-auto pb-2">
-            
-            <!-- Mode Switcher -->
-            <div class="glass-panel rounded-2xl p-2 flex gap-2 shrink-0">
-                <button id="mode-build" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white shadow-lg transition-all">
-                    <i class="ph-bold ph-hammer"></i>
-                    <span class="font-semibold text-sm">Build</span>
-                </button>
-                <button id="mode-delete" class="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all">
-                    <i class="ph-bold ph-eraser"></i>
-                    <span class="font-semibold text-sm">Delete</span>
-                </button>
-            </div>
+        // --- Initialization ---
+        function init() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(FOG_COLOR);
+            scene.fog = new THREE.FogExp2(FOG_COLOR, 0.0025);
 
-            <!-- Color Palette -->
-            <div class="glass-panel rounded-2xl p-3 flex gap-3 overflow-x-auto no-scrollbar max-w-full md:max-w-lg">
-                <div id="color-palette" class="flex gap-3 px-1"></div>
-            </div>
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 20, 40);
 
-            <!-- Screenshot -->
-             <button id="btn-screenshot" class="glass-panel hover:bg-white/10 text-white p-3.5 rounded-xl transition-all shrink-0" title="Take Screenshot">
-                <i class="ph ph-camera text-xl"></i>
-            </button>
-        </div>
-    </div>
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-    <!-- Help Modal -->
-    <div id="help-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <div class="glass-panel p-8 rounded-3xl max-w-md mx-4 text-center transform scale-95 transition-transform duration-300 pointer-events-auto">
-            <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="ph-duotone ph-mouse-left-click text-3xl text-blue-400"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-white mb-2">How to Play</h2>
-            <ul class="text-gray-300 text-left space-y-3 mb-6 text-sm">
-                <li class="flex gap-3"><i class="ph-fill ph-cursor-click text-blue-400 mt-1"></i> <span><strong>Click</strong> to place a block.</span></li>
-                <li class="flex gap-3"><i class="ph-fill ph-hand-grabbing text-blue-400 mt-1"></i> <span><strong>Drag background</strong> to rotate view.</span></li>
-                <li class="flex gap-3"><i class="ph-fill ph-eraser text-red-400 mt-1"></i> <span>Use <strong>Delete Mode</strong> to remove blocks.</span></li>
-                <li class="flex gap-3"><i class="ph-fill ph-arrows-out text-blue-400 mt-1"></i> <span><strong>Scroll</strong> or Pinch to zoom.</span></li>
-            </ul>
-            <button id="btn-close-help" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors">
-                Start Building
-            </button>
-        </div>
-    </div>
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
+            const dirLight = new THREE.DirectionalLight(0xffccaa, 1.5);
+            dirLight.position.set(100, 300, 100);
+            dirLight.castShadow = true;
+            dirLight.shadow.camera.top = 500;
+            dirLight.shadow.camera.bottom = -500;
+            dirLight.shadow.camera.left = -500;
+            dirLight.shadow.camera.right = 500;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            // City Generation
+            createCity();
+            createGround();
+
+            // Player Generation
+            createPlayer();
+
+            // Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('keydown', (e) => keys[e.key] = true);
+            document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+            // Touch Controls
+            setupTouchControls();
+
+            // Start Loop
+            animate();
         }
-    </script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        // --- Game Objects ---
 
-        // --- Configuration ---
-        const COLORS = [
-            0xE11D48, 0xF97316, 0xFACC15, 0x22C55E, 0x06B6D4, 
-            0x3B82F6, 0x8B5CF6, 0xEC4899, 0xFFFFFF, 0x9CA3AF, 0x1F2937
-        ];
-        
-        let selectedColor = COLORS[5];
-        let isDeleteMode = false;
-        let isInteractionEnabled = true;
-        
-        // --- Scene Setup ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111827);
-        scene.fog = new THREE.Fog(0x111827, 200, 2000);
+        function createPlayer() {
+            player = new THREE.Group();
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
-        camera.position.set(500, 800, 1300);
+            // Fuselage
+            const geoBody = new THREE.ConeGeometry(1, 8, 8);
+            geoBody.rotateX(Math.PI / 2);
+            const matBody = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.4, metalness: 0.8 });
+            const body = new THREE.Mesh(geoBody, matBody);
+            body.castShadow = true;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimize for high DPI
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        const container = document.getElementById('canvas-container');
-        container.appendChild(renderer.domElement);
+            // Wings
+            const geoWings = new THREE.BoxGeometry(6, 0.2, 1.5);
+            const matWings = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+            const wings = new THREE.Mesh(geoWings, matWings);
+            wings.position.z = 0.5;
+            wings.castShadow = true;
 
-        // --- Controls ---
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.maxPolarAngle = Math.PI / 2 - 0.02; // Ground collision
-        controls.minDistance = 100;
-        controls.maxDistance = 5000;
-        controls.target.set(0,0,0);
+            // Engine Glow
+            const geoEngine = new THREE.CylinderGeometry(0.4, 0.1, 0.5, 8);
+            geoEngine.rotateX(Math.PI / 2);
+            const matEngine = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            const engine = new THREE.Mesh(geoEngine, matEngine);
+            engine.position.z = 4;
 
-        // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0x606060, 1.5);
-        scene.add(ambientLight);
+            player.add(body);
+            player.add(wings);
+            player.add(engine);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-        dirLight.position.set(300, 1000, 500).normalize();
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        const d = 2000;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
-        scene.add(dirLight);
+            // Cockpit Light
+            const light = new THREE.PointLight(0x00ffff, 1, 20);
+            light.position.set(0, 1, 0);
+            player.add(light);
 
-        // --- Environment ---
-        // Massive invisible plane for raycasting everywhere
-        const planeGeo = new THREE.PlaneGeometry(10000, 10000);
-        planeGeo.rotateX(-Math.PI / 2);
-        const planeMat = new THREE.MeshBasicMaterial({ visible: false });
-        const plane = new THREE.Mesh(planeGeo, planeMat);
-        scene.add(plane);
+            scene.add(player);
+            player.position.set(0, 150, 0); // Start high
+        }
 
-        const gridHelper = new THREE.GridHelper(2000, 40, 0x4b5563, 0x374151);
-        scene.add(gridHelper);
+        function createCity() {
+            cityGroup = new THREE.Group();
+            const geoBox = new THREE.BoxGeometry(1, 1, 1);
+            geoBox.translate(0, 0.5, 0); // Pivot at bottom
 
-        // Block definition
-        const blockSize = 50;
-        const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize); 
-        const getMaterial = (color) => new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.1 });
+            // Create many buildings
+            for (let i = 0; i < BUILDINGS_COUNT; i++) {
+                const height = Math.random() * 180 + 20;
+                const width = Math.random() * 20 + 10;
+                
+                // Emissive building materials for neon look
+                const color = BUILDING_COLORS[Math.floor(Math.random() * BUILDING_COLORS.length)];
+                const isNeon = Math.random() > 0.7;
+                
+                const material = new THREE.MeshStandardMaterial({
+                    color: isNeon ? 0x111111 : 0x222222,
+                    roughness: 0.2,
+                    emissive: isNeon ? color : 0x000000,
+                    emissiveIntensity: isNeon ? 0.8 : 0,
+                });
 
-        // Ghost Block
-        const rollOverGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
-        const rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.5, transparent: true });
-        const rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMaterial);
-        scene.add(rollOverMesh);
+                const mesh = new THREE.Mesh(geoBox, material);
+                
+                mesh.position.x = (Math.random() - 0.5) * CITY_SIZE;
+                mesh.position.z = (Math.random() - 0.5) * CITY_SIZE;
+                mesh.scale.set(width, height, width);
+                mesh.updateMatrix();
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
 
-        // --- Logic ---
-        const objects = [plane];
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
+                // Store collider data
+                mesh.userData = {
+                    width: width,
+                    height: height,
+                    x: mesh.position.x,
+                    z: mesh.position.z
+                };
 
-        // --- UI Setup ---
-        const paletteContainer = document.getElementById('color-palette');
-        COLORS.forEach((colorHex, index) => {
-            const btn = document.createElement('button');
-            btn.className = `color-btn w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-transparent transition-all duration-200 shrink-0`;
-            btn.style.backgroundColor = '#' + colorHex.toString(16).padStart(6, '0');
-            if (index === 5) btn.classList.add('active');
-            
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent click from hitting canvas
-                selectedColor = colorHex;
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                if(isDeleteMode) toggleMode('build');
+                cityGroup.add(mesh);
+                buildings.push(mesh);
+            }
+            scene.add(cityGroup);
+        }
+
+        function createGround() {
+            const geometry = new THREE.PlaneGeometry(CITY_SIZE * 2, CITY_SIZE * 2);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x050505, 
+                roughness: 0.8 
             });
-            paletteContainer.appendChild(btn);
-        });
+            const ground = new THREE.Mesh(geometry, material);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.1;
+            ground.receiveShadow = true;
+            scene.add(ground);
 
-        const btnBuild = document.getElementById('mode-build');
-        const btnDelete = document.getElementById('mode-delete');
-
-        function toggleMode(mode) {
-            isDeleteMode = (mode === 'delete');
-            if (isDeleteMode) {
-                btnDelete.classList.replace('text-gray-400', 'bg-red-600');
-                btnDelete.classList.replace('hover:bg-white/10', 'text-white');
-                btnDelete.classList.add('shadow-lg');
-                
-                btnBuild.classList.replace('bg-blue-600', 'text-gray-400');
-                btnBuild.classList.replace('text-white', 'hover:bg-white/10');
-                btnBuild.classList.remove('shadow-lg');
-                
-                rollOverMesh.visible = false;
-                document.body.style.cursor = 'not-allowed';
-            } else {
-                btnBuild.classList.replace('text-gray-400', 'bg-blue-600');
-                btnBuild.classList.replace('hover:bg-white/10', 'text-white');
-                btnBuild.classList.add('shadow-lg');
-
-                btnDelete.classList.replace('bg-red-600', 'text-gray-400');
-                btnDelete.classList.replace('text-white', 'hover:bg-white/10');
-                btnDelete.classList.remove('shadow-lg');
-
-                rollOverMesh.visible = true;
-                rollOverMaterial.color.setHex(0xff0000);
-                document.body.style.cursor = 'default';
-            }
+            // Grid helper for futuristic floor
+            const grid = new THREE.GridHelper(CITY_SIZE * 2, 100, 0x222222, 0x111111);
+            scene.add(grid);
         }
 
-        btnBuild.addEventListener('click', () => toggleMode('build'));
-        btnDelete.addEventListener('click', () => toggleMode('delete'));
+        // --- Game Logic ---
 
-        // --- Robust Interaction Handlers ---
-        let mouseDownTime = 0;
-        let isDownOnUI = false;
-        const clickThreshold = 250; //ms
+        function updatePhysics() {
+            if (!gameActive) return;
 
-        function updatePointer(event) {
-            // Handle both Mouse and Touch events standardly
-            const x = event.clientX || (event.touches && event.touches[0]?.clientX);
-            const y = event.clientY || (event.touches && event.touches[0]?.clientY);
+            const delta = clock.getDelta();
+
+            // Inputs
+            let pitchInput = 0; // Up/Down
+            let rollInput = 0; // Left/Right
+            let boostInput = false;
+
+            // Keyboard
+            if (keys.w || keys.ArrowUp) pitchInput = 1;
+            if (keys.s || keys.ArrowDown) pitchInput = -1;
+            if (keys.a || keys.ArrowLeft) rollInput = 1;
+            if (keys.d || keys.ArrowRight) rollInput = -1;
+            if (keys.c) boostInput = true; // Space was scrolling page, changed to C or just rely on Space with preventDefault
+
+            // Spacebar handling (prevent scroll)
+            if(keys[' ']) boostInput = true;
+
+            // Touch
+            if (touchInput.x !== 0 || touchInput.y !== 0) {
+                pitchInput = -touchInput.y; // Invert Y for flight controls
+                rollInput = -touchInput.x;
+            }
+            if (touchInput.boosting) boostInput = true;
+
+            // Calculate Speed
+            let targetSpeed = BASE_SPEED;
+            if (boostInput) targetSpeed = MAX_SPEED;
+            if (keys.Shift) targetSpeed = BASE_SPEED * 0.5;
             
-            if (x !== undefined && y !== undefined) {
-                pointer.set(
-                    (x / window.innerWidth) * 2 - 1,
-                    -(y / window.innerHeight) * 2 + 1
-                );
+            speed += (targetSpeed - speed) * 0.1; // Smooth acceleration
+
+            // Apply Rotation (Pitch/Yaw/Roll mixed)
+            player.rotateX(pitchInput * ROTATION_SPEED);
+            player.rotateZ(rollInput * ROTATION_SPEED);
+            
+            // Auto-leveling slightly
+            /*
+            if (rollInput === 0) {
+                player.rotation.z *= 0.98;
             }
-        }
+            */
 
-        function onPointerMove(event) {
-            updatePointer(event);
-            raycaster.setFromCamera(pointer, camera);
-            const intersects = raycaster.intersectObjects(objects, false);
+            // Move Forward
+            player.translateY(0); // No drift
+            player.translateZ(-speed);
 
-            if (intersects.length > 0 && !isDeleteMode) {
-                const intersect = intersects[0];
-                rollOverMesh.visible = true;
-                rollOverMesh.position.copy(intersect.point).add(intersect.face.normal);
-                rollOverMesh.position.divideScalar(blockSize).floor().multiplyScalar(blockSize).addScalar(blockSize / 2);
-                rollOverMaterial.color.setHex(selectedColor);
+            // Update Distance
+            distanceTraveled += speed;
+
+            // Infinite City Logic: Wrap player or buildings?
+            // Easier: Wrap player position relative to center, but that messes up trail.
+            // Better: Teleport buildings that are far behind to the front.
+            
+            const pPos = player.position;
+            const spawnDist = 800;
+
+            buildings.forEach(b => {
+                // Check distance on Z relative to player rotation is hard.
+                // Simple euclidean distance check for respawning
+                const dist = pPos.distanceTo(b.position);
+                
+                // If building is too far, move it near player but random
+                if (dist > 2000) {
+                   // Place it somewhere in front of the player
+                   // Get forward vector
+                   const dir = new THREE.Vector3(0, 0, -1);
+                   dir.applyQuaternion(player.quaternion);
+                   dir.normalize();
+
+                   // New Position: Player Pos + (Direction * random(1000, 2000)) + Random Offset
+                   const forwardOffset = 1000 + Math.random() * 1000;
+                   const sideOffset = (Math.random() - 0.5) * 1000;
+
+                   // Simplified: Just scatter around map center if player loops? 
+                   // No, let's just use a huge map and wrap player if they go too far from 0,0,0
+                }
+            });
+
+            // Basic boundary wrap (Player stays within box, world loops visually)
+            // Actually, for simplicity in this file size, we will just let them fly. 
+            // If they fly out of the city, they are over the "Ocean".
+
+            // Camera Follow
+            // Create a desired camera position relative to player
+            const relativeCameraOffset = new THREE.Vector3(0, 8, 25);
+            const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld);
+
+            camera.position.lerp(cameraOffset, 0.1);
+            camera.lookAt(player.position);
+            
+            // Update HUD
+            elSpeed.innerText = Math.floor(speed * 300);
+            elAlt.innerText = Math.floor(player.position.y);
+            elDist.innerText = "DIST: " + Math.floor(distanceTraveled / 100);
+
+            // Warnings
+            if (player.position.y < 20) {
+                elWarning.style.display = 'block';
             } else {
-                // Keep ghost hidden if not hitting anything or in delete mode
-                rollOverMesh.visible = false;
+                elWarning.style.display = 'none';
             }
+
+            checkCollisions();
         }
 
-        function onPointerDown(event) {
-            // Check if interacting with UI
-            if (event.target.closest('.glass-panel')) {
-                isDownOnUI = true;
+        function checkCollisions() {
+            const pBox = new THREE.Box3().setFromObject(player);
+            const pCenter = player.position;
+
+            // Ground Collision
+            if (pCenter.y < 1) {
+                triggerGameOver("CRASHED INTO GROUND");
                 return;
             }
-            isDownOnUI = false;
-            mouseDownTime = Date.now();
-        }
 
-        function onPointerUp(event) {
-            // If we started clicking on UI, ignore the release
-            if (isDownOnUI) return;
-            // If we ended clicking on UI, ignore
-            if (event.target.closest('.glass-panel')) return;
-            // If it was a drag (rotating camera), ignore
-            if (Date.now() - mouseDownTime > clickThreshold) return;
+            // Building Collision
+            // Optimization: Only check buildings close by
+            for (let i = 0; i < buildings.length; i++) {
+                const b = buildings[i];
+                const dx = Math.abs(pCenter.x - b.position.x);
+                const dz = Math.abs(pCenter.z - b.position.z);
+                const dy = pCenter.y;
 
-            // Process Click
-            updatePointer(event);
-            raycaster.setFromCamera(pointer, camera);
-            const intersects = raycaster.intersectObjects(objects, false);
-
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-
-                if (isDeleteMode || event.shiftKey) {
-                    if (intersect.object !== plane) {
-                        scene.remove(intersect.object);
-                        objects.splice(objects.indexOf(intersect.object), 1);
+                // Broad phase
+                if (dx < 50 && dz < 50) {
+                    // Narrow phase: Simple box check using userData dimensions
+                    // Building Y is from 0 to scale.y
+                    // Building X is center +/- scale.x/2
+                    const halfW = b.userData.width / 2;
+                    if (dy < b.userData.height && dx < halfW + 2 && dz < halfW + 2) {
+                        triggerGameOver("HIT A BUILDING");
+                        return;
                     }
-                } else {
-                    // Create Block
-                    const voxel = new THREE.Mesh(blockGeo, getMaterial(selectedColor));
-                    voxel.position.copy(intersect.point).add(intersect.face.normal);
-                    voxel.position.divideScalar(blockSize).floor().multiplyScalar(blockSize).addScalar(blockSize / 2);
-                    
-                    voxel.castShadow = true;
-                    voxel.receiveShadow = true;
-
-                    scene.add(voxel);
-                    objects.push(voxel);
-
-                    // Animate Pop
-                    voxel.scale.set(0,0,0);
-                    let s = 0;
-                    const animateSpawn = () => {
-                        s += 0.15;
-                        voxel.scale.set(s,s,s);
-                        if(s < 1) requestAnimationFrame(animateSpawn);
-                        else voxel.scale.set(1,1,1);
-                    };
-                    animateSpawn();
                 }
             }
         }
 
-        // Attach listeners to document to catch all events
-        document.addEventListener('pointermove', onPointerMove);
-        document.addEventListener('pointerdown', onPointerDown);
-        document.addEventListener('pointerup', onPointerUp);
+        function triggerGameOver(reason) {
+            gameActive = false;
+            elGameOver.style.display = 'flex';
+            document.getElementById('crash-reason').innerText = reason;
+            elFinalScore.innerText = Math.floor(distanceTraveled / 100) + " km";
+        }
 
-        // Helpers
-        document.getElementById('btn-clear').addEventListener('click', () => {
-            for (let i = objects.length - 1; i > 0; i--) {
-                scene.remove(objects[i]);
-            }
-            objects.splice(1); // Keep plane
-        });
-
-        document.getElementById('btn-reset-view').addEventListener('click', () => {
-            controls.reset();
-            camera.position.set(500, 800, 1300);
-            camera.lookAt(0, 0, 0);
-        });
-
-        document.getElementById('btn-screenshot').addEventListener('click', () => {
-            renderer.render(scene, camera);
-            const link = document.createElement('a');
-            link.download = 'my-build.png';
-            link.href = renderer.domElement.toDataURL('image/png');
-            link.click();
-        });
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Modal
-        const modal = document.getElementById('help-modal');
-        document.getElementById('btn-help').addEventListener('click', () => {
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.children[0].classList.remove('scale-95');
-            }, 10);
-        });
-        document.getElementById('btn-close-help').addEventListener('click', () => {
-            modal.classList.add('opacity-0');
-            modal.children[0].classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        });
+        function resetGame() {
+            player.position.set(0, 150, 0);
+            player.rotation.set(0, 0, 0);
+            speed = BASE_SPEED;
+            distanceTraveled = 0;
+            gameActive = true;
+            elGameOver.style.display = 'none';
+            
+            // Randomize city again slightly
+            scene.remove(cityGroup);
+            buildings = [];
+            createCity();
+        }
 
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
+            updatePhysics();
             renderer.render(scene, camera);
         }
-        animate();
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Touch Controls Setup ---
+        function setupTouchControls() {
+            // Detect if touch device roughly
+            const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            if (isTouch) {
+                document.getElementById('mobile-controls').style.display = 'block';
+            }
+
+            // Joystick Logic
+            let startX = 0;
+            let startY = 0;
+            
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                joystickKnob.style.transition = 'none';
+            });
+
+            joystickZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                const deltaX = touch.clientX - startX;
+                const deltaY = touch.clientY - startY;
+                
+                // Clamp visual
+                const maxDist = 35;
+                const dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+                let visualX = deltaX;
+                let visualY = deltaY;
+                
+                if (dist > maxDist) {
+                    visualX = (deltaX / dist) * maxDist;
+                    visualY = (deltaY / dist) * maxDist;
+                }
+
+                joystickKnob.style.transform = `translate(calc(-50% + ${visualX}px), calc(-50% + ${visualY}px))`;
+
+                // Normalize output -1 to 1
+                touchInput.x = Math.max(-1, Math.min(1, deltaX / maxDist));
+                touchInput.y = Math.max(-1, Math.min(1, deltaY / maxDist));
+            });
+
+            joystickZone.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchInput.x = 0;
+                touchInput.y = 0;
+                joystickKnob.style.transition = 'transform 0.2s';
+                joystickKnob.style.transform = `translate(-50%, -50%)`;
+            });
+
+            // Boost Button
+            boostBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchInput.boosting = true;
+                boostBtn.style.background = "rgba(255, 100, 100, 0.5)";
+            });
+            
+            boostBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchInput.boosting = false;
+                boostBtn.style.background = "rgba(255, 100, 100, 0.2)";
+            });
+        }
+
+        // Boot
+        init();
 
     </script>
 </body>
