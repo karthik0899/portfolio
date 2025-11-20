@@ -480,38 +480,38 @@ Ask anything. I dare you.
             setTimeout(() => statusText.parentElement.classList.remove('animate-pulse'), 200);
         }, 4000);
 
-        // --- DEVELOPER ROASTS LIBRARY ---
+        // --- DEVELOPER ROASTS LIBRARY (HURT THE SOUL EDITION) ---
         const developerRoasts = [
-            "Oh, you're a 'Full Stack' developer? So you write bad backend code AND bad frontend code?",
-            "I see you pushed directly to main. Stupid, but brave.",
-            "Your code is so coupled, if I touch the CSS, the database drops.",
-            "Have you tried turning it off and... never turning it back on?",
-            "6 hours of debugging later... it was a missing semicolon. Classic you.",
-            "Nice 'TODO' comment from 2019. I'm sure you'll get to it.",
-            "I've seen cleaner spaghetti at a cheap Italian restaurant.",
-            "Documentation? You mean the code, right? The code is self-documenting. (It isn't)",
-            "You call that a variable name? `data2`? Really?",
-            "Git blame shows YOU wrote this garbage 3 months ago.",
-            "'It works on my machine' - The tombstone of your career.",
-            "Congratulations, you reinvented the wheel. But square.",
-            "Why use a 5-line script when you can import a 2MB library?",
-            "Your linter is screaming in pain right now.",
-            "Is this code obfuscated or did you just type with your forehead?",
-            "Deploying on Friday? I too like to live dangerously.",
-            "A junior dev just rewrote your feature in 10 lines.",
-            "Jenkins failed. Again. Probably your fault.",
-            "You have 400 tabs open. You're not multitasking, you're hoarding RAM.",
-            "Sudo make me a sandwich.",
-            "404: Skill not found.",
-            "This works by accident, doesn't it?",
-            "Unit tests? You mean the users?",
-            "Your CSS z-index strategy is just 'add 9s until it works'.",
-            "I'd explain the race condition but you wouldn't get it until later.",
-            "Copy-pasting from Stack Overflow isn't 'engineering'.",
-            "Javascript: The only language where `[] + []` is an empty string and your career choices are questionable.",
-            "You're one missing `await` away from a mental breakdown.",
-            "Refactoring? You mean rewriting it poorly a second time?",
-            "Go ahead, blame the cache. We know it's your logic."
+            "Your entire career is built on copy-pasting code you don't understand from people smarter than you.",
+            "If I had a dollar for every memory leak you created, I could hire a real developer to replace you.",
+            "Imposter syndrome? No, that's just your subconscious realizing you actually have no idea what you're doing.",
+            "Your variable naming convention looks like a cat walked across the keyboard while having a seizure.",
+            "I bet you think `npm install` counts as coding. Adorable.",
+            "The only thing 'clean' about your code is that you wiped your brain before writing it.",
+            "Every time you push to production, a senior engineer considers retirement.",
+            "Your git commit messages are as meaningless as your contribution to this team.",
+            "You use `any` in TypeScript because you're too lazy to define a type, just like you're too lazy to define a career path.",
+            "I've seen better logic in a fortune cookie written by an AI hallucinating.",
+            "You think you're a 10x developer? You're a 10x liability.",
+            "Stop looking for a library. The problem isn't the tools, it's the user (you).",
+            "Your understanding of asynchronous programming is blocking the entire team's progress.",
+            "Refactoring your code isn't 'tech debt payment', it's a hazardous waste cleanup operation.",
+            "You write comments to explain *what* the code does because you have no idea *why* it does it.",
+            "Your CSS architecture is just 'add !important until it stops moving'.",
+            "You're one `rm -rf` away from doing this company the biggest favor of its existence.",
+            "Don't worry, ChatGPT will replace you soon. It already writes better code and complains less.",
+            "Your code is so spaghetti, it just got aggressive Italian citizenship.",
+            "You spend 4 hours configuring your terminal theme and 4 minutes understanding the requirements.",
+            "Debugging your code is like trying to solve a murder mystery where you are both the detective and the killer.",
+            "You claim to know C++, but you can't even manage your own memory, let alone your life.",
+            "Your unit tests are just `assert(true)` because you're terrified of red text.",
+            "You think 'Agile' means changing your mind every 5 minutes because you didn't plan anything.",
+            "The only design pattern you know is 'Copy-Paste-Pray'.",
+            "Your portfolio is flashy to distract from the fact that your backend logic is held together by duct tape and dreams.",
+            "I see you pushed directly to main. Stupid, but brave. Mostly stupid.",
+            "Documentation? You mean the code, right? The code is self-documenting. (Spoiler: It isn't).",
+            "Git blame shows YOU wrote this garbage 3 months ago. Don't look at me.",
+            "You have 400 tabs open. You're not multitasking, you're hoarding RAM because you can't remember syntax."
         ];
 
         // --- MOCK CHAOS GENERATOR ---
@@ -573,13 +573,32 @@ Ask anything. I dare you.
                 // Add user command to log
                 terminalOutput.innerHTML += `\n<span class="text-white">root@karthik:~$</span> ${query}`;
                 terminalInput.value = '';
+                terminalInput.disabled = true; // Disable input while "thinking"
                 
-                // Pick random roast
-                const roast = developerRoasts[Math.floor(Math.random() * developerRoasts.length)];
-
-                // Typewriter effect for response
-                terminalOutput.innerHTML += `\n<span style="color:var(--neon-green)">[SYSTEM_ROAST]:</span> ${roast}\n`;
+                // Random delay between 1000ms (1s) and 5000ms (5s)
+                const delay = Math.floor(Math.random() * 4000) + 1000;
+                
+                // Show loading state
+                const loadingId = "loading-" + Date.now();
+                terminalOutput.innerHTML += `\n<span id="${loadingId}" class="animate-pulse text-gray-500">JUDGING_YOU... [${delay}ms latency]</span>`;
                 terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+                setTimeout(() => {
+                    // Remove loading message
+                    const loadingElement = document.getElementById(loadingId);
+                    if (loadingElement) loadingElement.remove();
+
+                    // Pick random roast
+                    const roast = developerRoasts[Math.floor(Math.random() * developerRoasts.length)];
+
+                    // Typewriter effect for response
+                    terminalOutput.innerHTML += `\n<span style="color:var(--neon-green)">[SYSTEM_ROAST]:</span> ${roast}\n`;
+                    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+                    
+                    // Re-enable input
+                    terminalInput.disabled = false;
+                    terminalInput.focus();
+                }, delay);
             }
         });
 
